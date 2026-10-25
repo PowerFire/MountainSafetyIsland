@@ -16,7 +16,7 @@ try {
     Get-ChildItem -LiteralPath (Join-Path $projectRoot 'dist') -File |
         Where-Object { $_.Extension -ne '.map' -and $_.Name -ne '.gitkeep' } |
         Copy-Item -Destination $sitePath
-    foreach ($docName in @('readme.md','OPERATIONS.md','DEPLOYMENT.md','DELIVERY.md','PROGRESS.md','SAFETY_REVIEW.md','PERFORMANCE_REPORT.md','performance-preview.png')) {
+    foreach ($docName in @('readme.md','OPERATIONS.md','DEPLOYMENT.md','DELIVERY.md','PROGRESS.md','SAFETY_REVIEW.md','PERFORMANCE_REPORT.md','performance-preview.png','vivid-colors-preview.png','vivid-colors-night-preview.png')) {
         Copy-Item -LiteralPath (Join-Path $projectRoot $docName) -Destination $docsPath
     }
     Get-ChildItem -LiteralPath $projectRoot -Filter 'performance-*.json' -File | Copy-Item -Destination $docsPath

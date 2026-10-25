@@ -92,6 +92,14 @@ export const DATA = {
         during: bilingual('登山途中', 'On the trail'),
         incident: bilingual('異常發生時', 'During an incident')
     },
+    characters: [
+        { id: 'ren', name: bilingual('任老', 'Ren Lao'), islandId: 'planning', hair: 'balding', glasses: false, pose: 'walking', build: 1.15, skin: '#d9a376', description: bilingual('稀疏灰髮、紅色長袖上衣，站起來沿島嶼步道散步。', 'Sparse grey hair and a red long-sleeved shirt, walking along the island paths.') },
+        { id: 'stone', name: bilingual('石頭', 'Stone'), islandId: 'navigation', hair: 'cropped-grey', glasses: true, pose: 'walking', satchel: true, build: 1.08, skin: '#d79b70', description: bilingual('灰黑短髮、圓框眼鏡、紅色上衣，搭配斜背包與手錶。', 'Short grey-black hair, round glasses, a red shirt, a crossbody bag and a watch.') },
+        { id: 'watt', name: bilingual('瓦特', 'Watt'), islandId: 'terrain', hair: 'close-cropped', glasses: false, pose: 'walking', build: .95, skin: '#e0ad80', description: bilingual('貼頭短髮、紅色有領上衣，沿步道探索不同主題島。', 'Close-cropped hair and a red polo, exploring the islands on foot.') },
+        { id: 'fire', name: bilingual('火哥', 'Fire'), islandId: 'rescue', hair: 'short', glasses: false, pose: 'walking', build: 1.05, skin: '#d9a274', description: bilingual('蓬鬆黑短髮、紅色有領上衣，以笑容迎接來訪者。', 'Full short black hair and a red polo, welcoming visitors with a smile.') },
+        { id: 'terry', name: bilingual('Terry', 'Terry'), islandId: 'equipment', hair: 'fringe', glasses: true, pose: 'walking', build: .95, skin: '#dfb184', description: bilingual('平齊黑色瀏海、細框眼鏡、紅色長袖上衣，雙手自然擺動行走。', 'A straight black fringe, thin-rimmed glasses and a red long-sleeved shirt, walking with a natural arm swing.') },
+        { id: 'doraemon', name: bilingual('小叮噹', 'Doraemon'), islandId: 'ecology', model: 'robot-cat', showLabel: false, showInList: false, pose: 'walking', description: bilingual('在島嶼步道上散步的藍色機器貓。', 'A blue robot cat wandering along the island paths.') }
+    ],
     sources: {
         emergency: { title: 'NPS · Outdoor Emergency Plan', url: 'https://www.nps.gov/articles/gtgemergencyplan.htm' },
         altitudeSevere: { title: 'CDC Yellow Book 2026 · Altitude Illness', url: 'https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html' },

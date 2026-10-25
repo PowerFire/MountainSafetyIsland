@@ -1,6 +1,8 @@
 import { MOBILE_QUERY, isMobileLayout } from './layout.js'
 import './style.css'
 import * as THREE from 'three'
+import { clayColor } from './colors.js'
+import { createCharacters } from './characters.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { DATA as SOURCE_DATA } from './data.js'
@@ -42,12 +44,12 @@ try {
     let guideOpen = false
     const scene = new THREE.Scene()
     const horizon = new THREE.Color('#f4eee3')
-    scene.fog = new THREE.Fog(horizon, 42, 150)
+    scene.fog = new THREE.Fog(horizon, 72, 165)
     const canvas = document.querySelector('canvas.webgl')
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
     renderer.outputEncoding = THREE.sRGBEncoding // Three.js r126 API
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1
+    renderer.toneMappingExposure = .93
     renderer.physicallyCorrectLights = true
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -141,7 +143,7 @@ try {
     const water = new THREE.Mesh(new THREE.CircleGeometry(160, 64).rotateX(-Math.PI / 2), waterMaterial)
     water.position.y = waterY
     scene.add(water)
-    function solid(color) { return new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0 }) }
+    function solid(color) { return new THREE.MeshStandardMaterial({ color: clayColor(color), roughness: 0.92, metalness: 0 }) }
     const curbMaterial = solid('#e4d6c3')
     const pathMaterial = solid('#dcc4ac')
     const deckMaterial = solid('#bd936d')
@@ -263,8 +265,9 @@ try {
     let dirty = true, labelsDirty = true, lastLabelsAt = -Infinity
     let journal = null
     const collaboration = createCollaboration({ scene, islands, data: DATA, random, onChange: () => { dirty = true; labelsDirty = true } })
-    const explorer = createExplorer({ data: DATA, random, onChange: () => { dirty = true; labelsDirty = true }, onSelect: selection => { journal?.close(); interaction?.select(selection) }, onClose: () => interaction?.clear() })
-    interaction = createSelection({ scene, camera, controls, canvas, islands, grounds, buildings, labelEntries, explorer, collaboration, reducedMotion, onChange: () => { dirty = true; labelsDirty = true } })
+    const characters = createCharacters({ scene, islands, data: DATA, onSelect: id => explorer.selectCharacter(id) })
+    const explorer = createExplorer({ data: DATA, characters, random, onChange: () => { dirty = true; labelsDirty = true }, onSelect: selection => { journal?.close(); interaction?.select(selection) }, onClose: () => interaction?.clear() })
+    interaction = createSelection({ scene, camera, controls, canvas, islands, grounds, buildings, labelEntries, explorer, collaboration, characters, reducedMotion, onChange: () => { dirty = true; labelsDirty = true } })
     collaboration.setNameHandler(id => { const walker = collaboration.getWalker(id); explorer.selectFlow(walker.flowId, id) })
     for (const [id, method] of [['show-walkers','setWalkers'], ['show-cargo','setCargo'], ['show-names','setNames'], ['show-flows','setLines']]) {
         const button = document.querySelector(`#${id}`)
@@ -300,6 +303,7 @@ try {
         return { button, minute: preset.minute }
     })
     const sunDirection = new THREE.Vector3()
+    const daytimeWater = new THREE.Color('#55a7b2')
     let shadowMinute = -1
     function applyTime() {
         minute = ((minute % 1440) + 1440) % 1440
@@ -312,14 +316,15 @@ try {
         horizon.copy(a.horizon).lerp(b.horizon, t)
         scene.fog.color.copy(horizon)
         sun.color.copy(a.sun).lerp(b.sun, t)
-        sun.intensity = lerp(a.sunI, b.sunI)
+        sun.intensity = lerp(a.sunI, b.sunI) * .88
         hemi.color.copy(a.hemiSky).lerp(b.hemiSky, t)
         hemi.groundColor.copy(a.hemiGround).lerp(b.hemiGround, t)
-        hemi.intensity = lerp(a.hemiI, b.hemiI)
+        // Keep readable nights, with more directional contrast in daylight.
+        hemi.intensity = lerp(a.hemiI, b.hemiI) * (.68 + .32 * lerp(a.night, b.night))
         const night = lerp(a.night, b.night)
         sky.material.uniforms.uNight.value = night
         sky.material.uniforms.uSun.value.copy(sun.color)
-        waterMaterial.uniforms.uShallow.value.copy(a.water).lerp(b.water, t)
+        waterMaterial.uniforms.uShallow.value.copy(a.water).lerp(b.water, t).lerp(daytimeWater, .8 * (1 - night))
         waterMaterial.uniforms.uDeep.value.copy(waterMaterial.uniforms.uShallow.value).multiplyScalar(.72)
         lampMaterial.emissiveIntensity = night * 3.2
         buildings.setNight(night)
@@ -400,15 +405,18 @@ try {
                 diagnostics.begin()
                 environment.update(elapsed, camera.position.distanceTo(controls.target))
                 collaboration.update(elapsed, camera.position.distanceTo(controls.target), reducedMotion.matches)
+                characters.update(elapsed, camera.position.distanceTo(controls.target), document.querySelector('#show-walkers').getAttribute('aria-pressed') === 'true')
+                explorer.updateCharacterLocation()
                 journal.sync(collaboration.events, minute, day)
                 renderer.render(scene, camera)
-                const movingNames = document.querySelector('#show-names').getAttribute('aria-pressed') === 'true' && camera.position.distanceTo(controls.target) < 14
+                const movingNames = characters.records.some(p => p.button && !p.button.hidden) || (document.querySelector('#show-names').getAttribute('aria-pressed') === 'true' && camera.position.distanceTo(controls.target) < 14)
                 if (labelsDirty || (movingNames && now - lastLabelsAt >= 100)) {
                 labels.render(scene, camera)
                 // Compact overlapping labels on small screens; full names remain accessible.
                 const rectangles = []
                 const obstacles = [...explorer.getObstacles(), journal.getObstacle()].filter(Boolean)
                 interaction.layoutPins(obstacles)
+                characters.layoutNames(obstacles)
                 collaboration.layoutNames(obstacles)
                 for (const entry of labelEntries) {
                     const { tag, name } = entry

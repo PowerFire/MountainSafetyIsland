@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { clayColor } from './colors.js'
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { tr } from './i18n.js'
@@ -28,8 +29,7 @@ export function createWalkingNetwork(islands, top) {
         for(let n=0;n<=10;n++){const point=nodes.get(from).clone().lerp(nodes.get(to),n/10);if(n>0&&n<10)point.y=top+.10+Math.sin(n/10*Math.PI)*.085;shape.push(point)}
         edge(from,to,shape);bridges++
     }))
-    function route(fromIsland,toIsland){
-        const start=`${fromIsland}:1`,goal=`${toIsland}:7`
+    function route(fromIsland,toIsland,start=`${fromIsland}:1`,goal=`${toIsland}:7`){
         if(!nodes.has(start)||!nodes.has(goal))throw new Error('協作路線引用未知島嶼')
         const distances=new Map([...nodes.keys()].map(id=>[id,Infinity])),previous=new Map(),pending=new Set(nodes.keys());distances.set(start,0)
         while(pending.size){let best=null;for(const id of pending)if(best===null||distances.get(id)<distances.get(best))best=id
@@ -98,7 +98,7 @@ export function createCollaboration({scene,islands,data,random,onChange}) {
     const dummy=new THREE.Object3D(),root=new THREE.Object3D(),matrix=new THREE.Matrix4(),colorCache=new Map()
     let colorsDirty=true
     function set(name,index,position,rotation=[0,0,0],scale=[1,1,1],color='#211d1d'){
-        dummy.position.set(...position);dummy.rotation.set(...rotation);dummy.scale.set(...scale);dummy.updateMatrix();matrix.multiplyMatrices(root.matrix,dummy.matrix);parts[name].setMatrixAt(index,matrix);if(colorsDirty){if(!colorCache.has(color))colorCache.set(color,new THREE.Color(color));parts[name].setColorAt(index,colorCache.get(color))}
+        dummy.position.set(...position);dummy.rotation.set(...rotation);dummy.scale.set(...scale);dummy.updateMatrix();matrix.multiplyMatrices(root.matrix,dummy.matrix);parts[name].setMatrixAt(index,matrix);if(colorsDirty){if(!colorCache.has(color))colorCache.set(color,clayColor(color));parts[name].setColorAt(index,colorCache.get(color))}
     }
     const textures=new Map()
     function cargoTexture(icon){

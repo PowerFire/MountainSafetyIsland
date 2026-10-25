@@ -3,11 +3,12 @@ import * as THREE from 'three'
 import { createModelKit } from './model-kit.js'
 import { tr } from './i18n.js'
 
-export function createExplorer({ data, random, onChange, onSelect = () => {}, onClose = () => {} }) {
+export function createExplorer({ data, characters, random, onChange, onSelect = () => {}, onClose = () => {} }) {
     const $ = selector => document.querySelector(selector)
     const index = $('#explore-index'), card = $('#detail-card'), list = $('#theme-list'), input = $('#island-search')
     const mobile = window.matchMedia(MOBILE_QUERY)
     let currentIsland = null, currentItem = null, currentFlow = null, returnFocus = null
+    let currentCharacter = null
     let dayItems = new Set()
     const thumbnails = new Map()
     let previewRenderer
@@ -46,14 +47,15 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
                 previewRenderer.setSize(160, 160); previewRenderer.setPixelRatio(1)
                 previewRenderer.outputEncoding = THREE.sRGBEncoding
                 previewRenderer.toneMapping = THREE.ACESFilmicToneMapping
+                previewRenderer.toneMappingExposure = .93
                 previewRenderer.physicallyCorrectLights = true
             }
             const scene = new THREE.Scene()
             const kit = createModelKit(random)
             kit.place(model, new THREE.Vector3(), 1, { islandId: 'preview', itemId: null })
             kit.build(scene)
-            scene.add(new THREE.HemisphereLight(0xeef6fa, 0x8f8270, 1.3))
-            const light = new THREE.DirectionalLight(0xfff1de, 2.8); light.position.set(2, 4, 3); scene.add(light)
+            scene.add(new THREE.HemisphereLight(0xeef6fa, 0x8f8270, .9))
+            const light = new THREE.DirectionalLight(0xfff1de, 2.5); light.position.set(2, 4, 3); scene.add(light)
             const camera = new THREE.PerspectiveCamera(32, 1, .1, 20)
             camera.position.set(2, 1.9, 2.7); camera.lookAt(0, .55, 0)
             previewRenderer.render(scene, camera)
@@ -66,6 +68,7 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
         } catch (error) { console.warn('模型縮圖暫時無法顯示', error); return null }
     }
     function heading(island, title, summary) {
+        currentCharacter = null
         const content = $('#detail-content'); content.replaceChildren()
         content.append(element('p', 'eyebrow', `${island.number} / ${island.name.en.toUpperCase()}`), element('h2', '', title), element('p', 'detail-summary', summary))
         return content
@@ -135,6 +138,26 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
         if (walkerId) content.append(element('p', 'muted', `搬運角色 ${walkerId} · 沿步道與橋樑往返`))
         showCard(); onSelect({ islandId: from.id, itemId: null, flowId: id, walkerId })
     }
+    function selectCharacter(id) {
+        const person = characters.get(id)
+        if (!person || person.showInList === false) return
+        const island = data.islands.find(i => i.id === person.islandId)
+        currentIsland = island; currentItem = null; currentFlow = null
+        const content = heading(island, person.name.zh, person.description.zh)
+        currentCharacter = person.id
+        content.append(element('p', 'eyebrow', 'SPECIAL GUEST'))
+        content.append(element('p', 'content-note', tr('依照片特徵製作的黏土風格示意人物，非寫實肖像。', 'A photo-inspired clay character, not a photorealistic portrait.')))
+        const choices = element('div', 'character-choices')
+        data.characters.filter(p => p.showInList !== false).forEach(p => { const choice = button(p.name.zh, () => selectCharacter(p.id), 'character-choice'); choice.setAttribute('aria-pressed', String(p.id === id)); choices.append(choice) })
+        content.append(element('p', 'content-note', tr('沿步道與橋樑隨機散步，短暫停留後繼續前往下一座島。', 'Wanders along paths and bridges, pausing briefly before choosing another island.')))
+        content.append(choices, button(tr('探索所在島嶼 →', 'Explore this island →'), () => selectIsland(characters.get(id).islandId), 'item-link'))
+        showCard(); onSelect({ islandId: island.id, itemId: null, characterId: id })
+    }
+    const guests = element('section', 'character-section')
+    guests.append(element('h3', '', tr('島上特別來賓', 'Special island guests')))
+    const guestList = element('div', 'character-choices')
+    data.characters.filter(p => p.showInList !== false).forEach(person => guestList.append(button(person.name.zh, () => selectCharacter(person.id), 'character-choice')))
+    guests.append(guestList); $('#search-count').before(guests)
     $('#flows-tab').textContent = tr(`協作關係 ${data.flows.length}`)
     data.flows.forEach(flow => {
         const from = data.islands.find(i => i.id === flow.from), to = data.islands.find(i => i.id === flow.to)
@@ -183,5 +206,13 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
     document.addEventListener('keydown', event => { if (event.key === 'Escape') { if (!card.hidden) hideCard(); else if (!index.hidden) { showIndex(false); $('#toggle-index').focus() } } })
     mobile.addEventListener('change', () => { showIndex(!mobile.matches && card.hidden); onChange() })
     renderList(); showIndex(!mobile.matches)
-    return { selectIsland, selectItem, selectFlow, setDayItems(ids) { dayItems = new Set(ids); document.querySelectorAll('[data-item-id]').forEach(node => node.classList.toggle('day-active', dayItems.has(node.dataset.itemId))) }, closeCard: hideCard, closeIndex: () => showIndex(false), getObstacles: () => [index, card, $('.island-brand'), $('.scene-tools'), $('.time-panel'), $('.collaboration-controls'), $('#flow-legend')].filter(node => !node.hidden && node.getClientRects().length).map(node => node.getBoundingClientRect()) }
+    return { selectIsland, selectItem, selectFlow, selectCharacter,
+        updateCharacterLocation() {
+            if (!currentCharacter || card.hidden) return
+            const person = characters.get(currentCharacter)
+            if (person.islandId === currentIsland.id) return
+            currentIsland = data.islands.find(i => i.id === person.islandId)
+            $('#detail-content .eyebrow').textContent = `${currentIsland.number} / ${currentIsland.name.en.toUpperCase()}`
+        },
+        setDayItems(ids) { dayItems = new Set(ids); document.querySelectorAll('[data-item-id]').forEach(node => node.classList.toggle('day-active', dayItems.has(node.dataset.itemId))) }, closeCard: hideCard, closeIndex: () => showIndex(false), getObstacles: () => [index, card, $('.island-brand'), $('.scene-tools'), $('.time-panel'), $('.collaboration-controls'), $('#flow-legend')].filter(node => !node.hidden && node.getClientRects().length).map(node => node.getBoundingClientRect()) }
 }

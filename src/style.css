@@ -194,3 +194,11 @@ button:disabled { opacity: .55; cursor: default; }
 .diagnostics { position: fixed; z-index: 30; left: 12px; top: 200px; max-width: calc(100% - 24px); padding: 10px; border-radius: 10px; background: #fff8f4f5; border: 1px solid #b48560; font: 11px ui-monospace,monospace; }
 .diagnostics summary { min-height: 32px; cursor: pointer; }
 .diagnostics pre { line-height: 1.6; max-height: 60vh; overflow: auto; }
+.character-section { margin-top: 16px; padding-top: 12px; border-top: 1px solid #dcc4ac; }
+.character-section h3 { margin: 0 0 10px; font-size: 14px; }
+.character-choices { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.character-choice { min-height: 44px; padding: 8px 14px; background: #fff8f4; border: 1px solid #d8bba5; border-radius: 999px; color: #562c22; }
+.character-choice[aria-pressed=true] { background: #cf251b; color: white; }
+.character-name { min-height: 32px; padding: 7px 11px; font-size: 12px; font-weight: 400; }
+.character-name.selected { color: #fff8f4; background: #211d1d; }
+@media(max-width:800px), (max-height:500px) { .character-name { font-size: 10px; min-height: 44px; padding: 8px; } }

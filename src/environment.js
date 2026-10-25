@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { clayColor } from './colors.js'
 import { SimplexNoise } from 'three/examples/jsm/math/SimplexNoise.js'
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
@@ -17,7 +18,7 @@ export function createEnvironment({ scene, islands, center, world, config, rando
     const terrainGeometry = new THREE.PlaneGeometry(config.terrainSize, config.terrainSize, config.terrainSegments, config.terrainSegments).rotateX(-Math.PI / 2)
     const position = terrainGeometry.attributes.position
     const colors = []
-    const stops = [[-.9,'#8fb3ad'],[0,'#d9c9a3'],[1,'#aec493'],[2.4,'#a3b986'],[4.4,'#6f8a62'],[7,'#b2a38d']].map(([h,c]) => [h,new THREE.Color(c)])
+    const stops = [[-.9,'#75a99a'],[0,'#d1bb8c'],[1,'#99b65e'],[2.4,'#8eaa5d'],[4.4,'#567443'],[7,'#9f8f70']].map(([h,c]) => [h,clayColor(c)])
     for (let i=0;i<position.count;i++) {
         const x=position.getX(i), z=position.getZ(i), y=height(x,z)
         position.setY(i,y)
@@ -45,10 +46,10 @@ export function createEnvironment({ scene, islands, center, world, config, rando
     const count=mobile?config.mobileForestCount:config.forestCount
     const forestMaterial=new THREE.MeshStandardMaterial({roughness:1,flatShading:true})
     const forests=[new THREE.InstancedMesh(pine,forestMaterial,count),new THREE.InstancedMesh(broad,forestMaterial,count)]
-    const trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.055,.08,.8,6),new THREE.MeshStandardMaterial({color:'#80694e',roughness:1}),count)
+    const trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.055,.08,.8,6),new THREE.MeshStandardMaterial({color:clayColor('#806043'),roughness:1}),count)
     const counts=[0,0]
     const dummy=new THREE.Object3D()
-    const treeColors=['#728f5f','#6f8a62','#8db86f','#9cc27a']
+    const treeColors=['#587d3b','#668a42','#85ae54','#a2c16d']
     let planted=0
     for(let attempt=0;attempt<count*8 && planted<count;attempt++) {
         const angle=random()*Math.PI*2, r=Math.sqrt(random()*(config.forestOuterRadius**2-config.forestInnerRadius**2)+config.forestInnerRadius**2)
@@ -57,7 +58,7 @@ export function createEnvironment({ scene, islands, center, world, config, rando
         const type=random()<.53?0:1,size=.6+random()*.75
         dummy.position.set(x,y,z);dummy.rotation.set(0,random()*Math.PI*2,0);dummy.scale.setScalar(size);dummy.updateMatrix()
         forests[type].setMatrixAt(counts[type],dummy.matrix)
-        forests[type].setColorAt(counts[type]++,new THREE.Color(treeColors[Math.floor(random()*treeColors.length)]))
+        forests[type].setColorAt(counts[type]++,clayColor(treeColors[Math.floor(random()*treeColors.length)]))
         dummy.position.y=y+.3*size;dummy.updateMatrix();trunks.setMatrixAt(planted++,dummy.matrix)
     }
     forests.forEach((mesh,i)=>{mesh.count=counts[i];mesh.frustumCulled=false;scene.add(mesh)})
@@ -92,11 +93,12 @@ export function createEnvironment({ scene, islands, center, world, config, rando
     const small=new THREE.Group();small.name='street-detail-lod';scene.add(small)
     const furniture=[]
     function part(target,x,y,z,sx,sy,sz,color,ry=0) {dummy.position.set(x,y,z);dummy.rotation.set(0,ry,0);dummy.scale.set(sx,sy,sz);dummy.updateMatrix();target.push({matrix:dummy.matrix.clone(),color})}
-    islands.forEach(({center:p},index)=>{
+    islands.forEach(({center:p,data:islandData},index)=>{
         const species=config.islandTrees[index%config.islandTrees.length]
         for(let n=0;n<4;n++) {
             // Edge interiors, away from vertices, bridges and the front labels.
-            const angle=[.55,2.05,3.55,4.65][n],x=p.x+Math.cos(angle)*1.63,z=p.z+Math.sin(angle)*1.63
+            // Keep the guest gathering area on the rescue island unobstructed.
+            const angle=(islandData.id==='rescue'?[-.55,-2.05,3.55,4.65]:[.55,2.05,3.55,4.65])[n],x=p.x+Math.cos(angle)*1.63,z=p.z+Math.sin(angle)*1.63
             const h=.55+random()*.18
             part(woodParts,x,world.top+h*.35,z,.065,h*.7,.065,'#b48560')
             const color=species==='cherry'?'#f2b5c6':species==='fruit'?'#9cc27a':species==='willow'?'#a3b986':'#728f5f'
@@ -120,7 +122,7 @@ export function createEnvironment({ scene, islands, center, world, config, rando
     })
     function instances(geometry,parts,target) {
         const mesh=new THREE.InstancedMesh(geometry,new THREE.MeshStandardMaterial({roughness:.9}),parts.length)
-        parts.forEach((p,i)=>{mesh.setMatrixAt(i,p.matrix);mesh.setColorAt(i,new THREE.Color(p.color))})
+        parts.forEach((p,i)=>{mesh.setMatrixAt(i,p.matrix);mesh.setColorAt(i,clayColor(p.color))})
         mesh.frustumCulled=false;mesh.receiveShadow=true;mesh.castShadow=false;target.add(mesh);return mesh
     }
     instances(new THREE.CylinderGeometry(.5,.5,1,7),woodParts,scene)

@@ -1,8 +1,9 @@
 import * as THREE from 'three'
+import { clayColor } from './colors.js'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 
 // Model functions emit parts only. Each geometry kind becomes one InstancedMesh.
-const C = { cream: '#f4ebdd', coral: '#db6a41', roof: '#a34e34', wood: '#b48560', glass: '#86a8a6', teal: '#3e7c8c', green: '#8db86f', ink: '#40372e', stone: '#c5b5a7', yellow: '#fcea8b' }
+const C = { cream: '#f4ebdd', coral: '#e9682f', roof: '#a34828', wood: '#ac784b', glass: '#679f9b', teal: '#237f8c', green: '#77ad4a', ink: '#30271f', stone: '#b8a48e', yellow: '#f4cb51' }
 export function createModelKit(random) {
     const geometries = {
         box: new THREE.BoxGeometry(1, 1, 1),
@@ -138,7 +139,7 @@ export function createModelKit(random) {
         records.push(record)
         models[model]()
     }
-    const glowMaterial = new THREE.MeshStandardMaterial({ roughness: .78, emissive: '#ffc777', emissiveIntensity: 0 })
+    const glowMaterial = new THREE.MeshStandardMaterial({ roughness: .78, emissive: clayColor('#ffc777'), emissiveIntensity: 0 })
     const solidMaterial = new THREE.MeshStandardMaterial({ roughness: .78, metalness: 0 })
     function build(scene) {
         const meshes = []
@@ -148,7 +149,7 @@ export function createModelKit(random) {
             mesh.name = `model-kit:${kind}`
             mesh.userData.owners = instances.map(part => part.owner)
             mesh.userData.baseColors = instances.map(part => part.color)
-            instances.forEach((part, index) => { mesh.setMatrixAt(index, part.matrix); mesh.setColorAt(index, new THREE.Color(part.color)) })
+            instances.forEach((part, index) => { mesh.setMatrixAt(index, part.matrix); mesh.setColorAt(index, clayColor(part.color)) })
             mesh.castShadow = !glow
             mesh.receiveShadow = true
             // r126 does not compute instance bounds reliably for all placements.
