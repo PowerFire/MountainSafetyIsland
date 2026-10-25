@@ -29,8 +29,15 @@
         <div class="index-tabs" role="tablist" aria-label="清單類型"><button id="themes-tab" role="tab" type="button" aria-selected="true" aria-controls="themes-panel">安全主題</button><button id="flows-tab" role="tab" type="button" aria-selected="false" aria-controls="flows-panel" tabindex="-1">協作關係 0</button></div>
         <p id="search-count" class="muted" role="status" aria-live="polite"></p>
         <div id="themes-panel" role="tabpanel" aria-labelledby="themes-tab"><div id="theme-list"></div></div>
-        <div id="flows-panel" role="tabpanel" aria-labelledby="flows-tab" hidden><p class="empty-message">協作關係尚未開放，目前可先探索 12 座主題島。</p></div>
+        <div id="flows-panel" role="tabpanel" aria-labelledby="flows-tab" hidden><div id="flow-list"></div></div>
     </aside>
+    <nav class="collaboration-controls" aria-label="協作顯示工具">
+        <button id="show-walkers" type="button" aria-pressed="true">小人</button>
+        <button id="show-cargo" type="button" aria-pressed="true">搬運</button>
+        <button id="show-names" type="button" aria-pressed="false">名牌</button>
+        <button id="show-flows" type="button" aria-pressed="false">協作線</button>
+    </nav>
+    <div id="flow-legend" class="flow-legend" hidden><span>━━ 官方依據</span><span>┄ 主題串聯</span><span>··· 待確認示範</span><small>教育情境，非即時作業</small></div>
     <aside id="detail-card" class="detail-card" aria-label="安全知識詳情" hidden>
         <div class="panel-heading"><button id="detail-back" type="button">← 返回</button><button id="expand-detail" type="button" aria-pressed="false">↕ 展開</button><button id="close-detail" type="button" aria-label="關閉詳情">×</button></div>
         <div id="detail-content"></div>

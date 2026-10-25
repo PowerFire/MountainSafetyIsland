@@ -7,6 +7,7 @@ import { createModelKit, itemLayout } from './model-kit.js'
 import { createEnvironment } from './environment.js'
 import { createExplorer } from './explorer.js'
 import { createSelection } from './selection.js'
+import { createCollaboration } from './collaboration.js'
 
 function mulberry32(seed) {
     return () => {
@@ -235,8 +236,14 @@ try {
     }
     document.querySelector('#scene-stats').textContent = `${islands.length} 座主題島 · ${buildings.records.length} 組模型 · ${bridgeCount} 座橋`
     let dirty = true
+    const collaboration = createCollaboration({ scene, islands, data: DATA, random, onChange: () => { dirty = true } })
     const explorer = createExplorer({ data: DATA, random, onChange: () => { dirty = true }, onSelect: selection => interaction?.select(selection), onClose: () => interaction?.clear() })
-    interaction = createSelection({ scene, camera, controls, canvas, islands, grounds, buildings, labelEntries, explorer, reducedMotion, onChange: () => { dirty = true } })
+    interaction = createSelection({ scene, camera, controls, canvas, islands, grounds, buildings, labelEntries, explorer, collaboration, reducedMotion, onChange: () => { dirty = true } })
+    collaboration.setNameHandler(id => { const walker = collaboration.getWalker(id); explorer.selectFlow(walker.flowId, id) })
+    for (const [id, method] of [['show-walkers','setWalkers'], ['show-cargo','setCargo'], ['show-names','setNames'], ['show-flows','setLines']]) {
+        const button = document.querySelector(`#${id}`)
+        button.addEventListener('click', () => { const active = button.getAttribute('aria-pressed') !== 'true'; button.setAttribute('aria-pressed', String(active)); collaboration[method](active) })
+    }
     let minute = DATA.time.startMinute
     let paused = false
     let displayedMinute = -1
@@ -351,12 +358,14 @@ try {
             }
             if (dirty && !document.hidden) {
                 environment.update(elapsed, camera.position.distanceTo(controls.target))
+                collaboration.update(elapsed, camera.position.distanceTo(controls.target), reducedMotion.matches)
                 renderer.render(scene, camera)
                 labels.render(scene, camera)
                 // Compact overlapping labels on small screens; full names remain accessible.
                 const rectangles = []
                 const obstacles = explorer.getObstacles()
                 interaction.layoutPins(obstacles)
+                collaboration.layoutNames(obstacles)
                 for (const { tag, name } of labelEntries) {
                     tag.style.visibility = 'visible'
                     name.hidden = false

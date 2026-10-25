@@ -243,7 +243,21 @@ export const DATA = {
             reviewedAt: '2026-10-25'
         }))
     })),
-    // 後續內容階段填入，空陣列不代表已完成協作或時段功能。
-    flows: [],
+    collaboration: {
+        handoffSeconds: 1.4, walkersPerFlow: 6,
+        walkingSpeed: [.32, .40], cyclingSpeed: [.62, .70],
+        evidenceLabels: { official: '官方依據', thematic: '主題串聯', pending: '待確認示範' },
+        note: '搬運角色與協作關係為教育情境示意，不代表真實機構的作業或已發生事件。'
+    },
+    flows: [
+        { id: 'plan-weather', from: 'planning', to: 'weather', cargo: { zh: '預報資料', en: 'Forecast notes' }, icon: 'document', role: 'leader', evidence: 'thematic', description: '把目的地天氣資訊納入行前計畫。' },
+        { id: 'gear-aid', from: 'equipment', to: 'first-aid', cargo: { zh: '保暖包', en: 'Warmth kit' }, icon: 'kit', role: 'responder', evidence: 'thematic', description: '連結備用衣物與保暖急救準備。' },
+        { id: 'fitness-altitude', from: 'fitness', to: 'altitude', cargo: { zh: '隊況紀錄', en: 'Team notes' }, icon: 'document', role: 'hiker', evidence: 'thematic', description: '把隊伍的身體狀況帶進高度適應評估。' },
+        { id: 'navigation-rescue', from: 'navigation', to: 'rescue', cargo: { zh: '位置座標', en: 'Coordinates' }, icon: 'compass', role: 'ranger', evidence: 'thematic', description: '用清楚的位置資訊協助求援溝通。' },
+        { id: 'food-fitness', from: 'supplies', to: 'fitness', cargo: { zh: '補給餐盒', en: 'Food supplies' }, icon: 'box', role: 'cyclist', evidence: 'thematic', description: '在活動規劃中同時考慮體能與補給。' },
+        { id: 'terrain-navigation', from: 'terrain', to: 'navigation', cargo: { zh: '路線地圖', en: 'Route map' }, icon: 'map', role: 'ranger', evidence: 'thematic', description: '把路線地形資訊與地圖閱讀連起來。' },
+        { id: 'contact-rescue', from: 'communication', to: 'rescue', cargo: { zh: '行程紀錄', en: 'Trip record' }, icon: 'document', role: 'contact', evidence: 'thematic', description: '連結留守資料與求援時的位置、現況資訊。' },
+        { id: 'ecology-supplies', from: 'ecology', to: 'supplies', cargo: { zh: '回收袋', en: 'Waste bag' }, icon: 'bag', role: 'volunteer', evidence: 'pending', description: '示範補給規劃與垃圾帶走之間可延伸的教育連結。' }
+    ],
     dayCycle: []
 }

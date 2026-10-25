@@ -104,6 +104,15 @@ button:focus-visible { outline: 3px solid #db6a41; outline-offset: 3px; }
 .item-pin { pointer-events: auto; width: 30px; min-height: 30px; padding: 0; border-radius: 50%; border: 1px solid #db6a41; background: #fff8f4; color: #a34e34; font: 700 12px ui-monospace,monospace; }
 .item-pin[aria-pressed="true"] { background: #db6a41; color: white; }
 #bird-view[aria-pressed="true"] { background: #211d1d; color: #fff8f4; }
+.collaboration-controls { position: fixed; bottom: 24px; left: 24px; display: flex; gap: 6px; z-index: 3; padding: 7px; border-radius: 14px; background: #fff8f4e6; backdrop-filter: blur(16px); }
+.collaboration-controls button { padding: 0 12px; font-size: 12px; }
+.collaboration-controls button[aria-pressed="true"] { background: #211d1d; color: #fff8f4; }
+.flow-legend { position: fixed; left: 24px; bottom: 88px; z-index: 3; padding: 10px 14px; border-radius: 14px; background: #fff8f4e6; color: #a34e34; box-shadow: 0 2px 8px #4a2a1414; font-size: 11px; }
+.flow-legend span { margin-right: 10px; }
+.flow-legend small { display: block; margin-top: 5px; color: #786c62; }
+.walker-name { pointer-events: auto; min-height: 28px; padding: 4px 8px; border-radius: 999px; font-size: 10px; white-space: nowrap; }
+.scene-hint { display: none; }
+@media(max-width:800px) { .collaboration-controls { left: 12px; bottom: 12px; padding: 0; gap: 4px; background: transparent; } .collaboration-controls button { width: 42px; padding: 0 2px; font-size: 10px; } .flow-legend { left: 12px; bottom: 66px; max-width: calc(100% - 24px); } }
 
 
 /*# sourceMappingURL=main.css.map*/

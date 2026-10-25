@@ -5,7 +5,7 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
     const $ = selector => document.querySelector(selector)
     const index = $('#explore-index'), card = $('#detail-card'), list = $('#theme-list'), input = $('#island-search')
     const mobile = window.matchMedia('(max-width:800px)')
-    let currentIsland = null, currentItem = null, returnFocus = null
+    let currentIsland = null, currentItem = null, currentFlow = null, returnFocus = null
     const thumbnails = new Map()
     let previewRenderer
     function element(tag, className, text) {
@@ -80,20 +80,23 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
     function selectIsland(id) {
         const island = data.islands.find(i => i.id === id)
         if (!island) return
-        currentIsland = island; currentItem = null
+        currentIsland = island; currentItem = null; currentFlow = null
         const content = heading(island, island.name.zh, island.summary.zh)
         const chips = element('div', 'topic-chips')
         island.topics.forEach(topic => chips.append(element('span', 'chip', topic)))
         content.append(chips, element('h3', '', `${island.items.length} 個安全細項`))
         island.items.forEach((item, n) => content.append(itemButton(island, item, n)))
-        content.append(element('h3', '', '協作關係'), element('p', 'muted', '協作資料尚未建立，將在後續階段接入。'))
+        content.append(element('h3', '', '協作關係'))
+        const related = data.flows.filter(flow => flow.from === id || flow.to === id)
+        related.forEach(flow => content.append(button(`${flow.cargo.zh} →`, () => selectFlow(flow.id), 'item-link')))
+        if (!related.length) content.append(element('p', 'muted', '目前沒有相關協作情境。'))
         showCard()
         onSelect({ islandId: island.id, itemId: null })
     }
     function selectItem(islandId, itemId) {
         const island = data.islands.find(i => i.id === islandId), item = island?.items.find(i => i.id === itemId)
         if (!item) return
-        currentIsland = island; currentItem = item
+        currentIsland = island; currentItem = item; currentFlow = null
         const content = heading(island, item.name.zh, item.description.zh)
         const imageUrl = thumbnail(item.model)
         if (imageUrl) { const image = element('img', 'model-thumbnail'); image.src = imageUrl; image.width = image.height = 160; image.alt = `${item.name.zh}的主題示意模型`; content.append(image) }
@@ -112,6 +115,24 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
         showCard()
         onSelect({ islandId: island.id, itemId: item.id })
     }
+    function selectFlow(id, walkerId = null) {
+        const flow = data.flows.find(f => f.id === id)
+        if (!flow) return
+        const from = data.islands.find(i => i.id === flow.from), to = data.islands.find(i => i.id === flow.to)
+        currentIsland = from; currentItem = null; currentFlow = flow
+        const content = heading(from, walkerId ? `正在搬 ${flow.cargo.zh}` : `${from.name.zh} → ${to.name.zh}`, flow.description)
+        const chips = element('div', 'topic-chips')
+        chips.append(element('span', 'chip', data.collaboration.evidenceLabels[flow.evidence]), element('span', 'chip', `搬運物：${flow.cargo.zh}`))
+        content.append(chips, element('h3', '', '協作兩端'), element('p', 'detail-summary', `${from.name.zh} → ${to.name.zh}`), element('p', 'content-note', data.collaboration.note))
+        content.append(button(`探索 ${from.name.zh}`, () => selectIsland(from.id), 'item-link'), button(`探索 ${to.name.zh}`, () => selectIsland(to.id), 'item-link'))
+        if (walkerId) content.append(element('p', 'muted', `搬運角色 ${walkerId} · 沿步道與橋樑往返`))
+        showCard(); onSelect({ islandId: from.id, itemId: null, flowId: id, walkerId })
+    }
+    $('#flows-tab').textContent = `協作關係 ${data.flows.length}`
+    data.flows.forEach(flow => {
+        const from = data.islands.find(i => i.id === flow.from), to = data.islands.find(i => i.id === flow.to)
+        $('#flow-list').append(button(`${from.name.zh} → ${to.name.zh}｜${flow.cargo.zh}`, () => selectFlow(flow.id), 'item-link'))
+    })
     function renderList() {
         const query = input.value.trim().normalize('NFKC').toLocaleLowerCase()
         list.replaceChildren()
@@ -149,11 +170,11 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
         $('#expand-detail').textContent = expanded ? '↕ 收合' : '↕ 展開'
         onChange()
     })
-    $('#detail-back').addEventListener('click', () => { if (currentItem) selectIsland(currentIsland.id); else { hideCard(); showIndex(true); input.focus() } })
+    $('#detail-back').addEventListener('click', () => { if (currentItem) selectIsland(currentIsland.id); else { const wasFlow = currentFlow; hideCard(); showIndex(true); if (wasFlow) selectTab(1); else input.focus() } })
     input.addEventListener('input', () => { selectTab(0); renderList() })
     $('#clear-search').addEventListener('click', () => { input.value = ''; selectTab(0); renderList(); input.focus() })
     document.addEventListener('keydown', event => { if (event.key === 'Escape') { if (!card.hidden) hideCard(); else if (!index.hidden) { showIndex(false); $('#toggle-index').focus() } } })
     mobile.addEventListener('change', () => { showIndex(!mobile.matches && card.hidden); onChange() })
     renderList(); showIndex(!mobile.matches)
-    return { selectIsland, selectItem, closeCard: hideCard, closeIndex: () => showIndex(false), getObstacles: () => [index, card, $('.island-brand'), $('.scene-tools'), $('.time-panel')].filter(node => !node.hidden && node.getClientRects().length).map(node => node.getBoundingClientRect()) }
+    return { selectIsland, selectItem, selectFlow, closeCard: hideCard, closeIndex: () => showIndex(false), getObstacles: () => [index, card, $('.island-brand'), $('.scene-tools'), $('.time-panel'), $('.collaboration-controls'), $('#flow-legend')].filter(node => !node.hidden && node.getClientRects().length).map(node => node.getBoundingClientRect()) }
 }
