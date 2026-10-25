@@ -9,7 +9,7 @@
 </head>
 <body>
     <main id="world" aria-label="登山安全島互動場景">
-        <canvas class="webgl" aria-label="拖曳旋轉、滾輪或雙指縮放 3D 島群"></canvas>
+        <canvas class="webgl" tabindex="0" aria-label="點選模型探索、拖曳或方向鍵旋轉、滾輪或雙指縮放 3D 島群"></canvas>
     </main>
     <header class="island-brand">
         <p class="eyebrow">MOUNTAIN SAFETY ISLAND</p>
@@ -20,6 +20,7 @@
     <nav class="scene-tools" aria-label="探索工具">
         <button id="overview" type="button">⌂ 全景</button>
         <button id="toggle-index" type="button" aria-controls="explore-index" aria-expanded="false">☰ 清單</button>
+        <button id="bird-view" type="button" aria-pressed="false">▦ 鳥瞰</button>
     </nav>
     <aside id="explore-index" class="explore-panel" aria-label="安全主題清單" hidden>
         <div class="panel-heading"><div><p class="eyebrow">THE SAFETY INDEX</p><h2>把準備，連起來。</h2></div><button id="close-index" type="button" aria-label="關閉清單">×</button></div>
@@ -44,7 +45,7 @@
         <p id="motion-note" hidden>已依減少動態效果設定停止自動播放；仍可手動選擇時間。</p>
         </div>
     </details>
-    <div class="scene-hint">拖曳旋轉 · 滾輪或雙指縮放<span id="scene-stats"></span></div>
+    <div class="scene-hint">點選模型探索 · 拖曳或方向鍵旋轉 · 滾輪縮放<span id="scene-stats"></span></div>
     <div id="loading" class="loading" role="status" aria-live="polite"><h2>正在組合登山安全島…</h2><p>準備天空、水面與十二座主題島。</p></div>
     <noscript><p class="no-script">請啟用 JavaScript，以瀏覽登山安全島互動場景。</p></noscript>
 </body>

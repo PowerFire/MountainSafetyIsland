@@ -6,6 +6,7 @@ import { DATA } from './data.js'
 import { createModelKit, itemLayout } from './model-kit.js'
 import { createEnvironment } from './environment.js'
 import { createExplorer } from './explorer.js'
+import { createSelection } from './selection.js'
 
 function mulberry32(seed) {
     return () => {
@@ -59,7 +60,10 @@ try {
     const bounds = new THREE.Box3().setFromPoints(islands.map(i => i.center))
     const center = bounds.getCenter(new THREE.Vector3())
     center.y = TOP
+    let interaction = null
     function overview() {
+        interaction?.reset()
+        if (interaction) explorer.closeCard()
         const aspect = window.innerWidth / window.innerHeight
         const distance = aspect > 1.5 ? 38 : aspect > 0.9 ? 44 : 62
         controls.target.copy(center)
@@ -139,6 +143,7 @@ try {
     const foamMaterial = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55, depthWrite: false })
     const shallowsMaterial = new THREE.MeshBasicMaterial({ color: '#cae6df', transparent: true, opacity: 0.28, depthWrite: false })
     const labelEntries = []
+    const grounds = []
     const lampMaterial = new THREE.MeshStandardMaterial({ color: '#ffe4aa', emissive: '#ffc777', emissiveIntensity: 0, roughness: .78 })
     const lampPostMaterial = solid('#71806a')
     const poolMaterial = new THREE.MeshBasicMaterial({ color: '#ffc777', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
@@ -164,6 +169,8 @@ try {
         const ground = new THREE.Mesh(groundGeometry, groundMaterial)
         ground.position.set(p.x, TOP, p.z)
         ground.receiveShadow = true
+        ground.userData.owner = { islandId: data.id, itemId: null }
+        grounds.push(ground)
         scene.add(ground)
         hexRing(1.50, 1.78, pathMaterial, p.x, TOP + 0.009, p.z)
         hexRing(R - 0.13, R - 0.05, curbMaterial, p.x, TOP + 0.013, p.z)
@@ -177,7 +184,8 @@ try {
             lampDummy.position.y = TOP + .025; lampDummy.updateMatrix(); lampPools.setMatrixAt(lampIndex, lampDummy.matrix)
             lampIndex++
         }
-        const tag = document.createElement('div')
+        const tag = document.createElement('button')
+        tag.type = 'button'
         tag.className = 'island-label'
         const number = document.createElement('span')
         number.textContent = data.number
@@ -188,7 +196,7 @@ try {
         const label = new CSS2DObject(tag)
         label.position.set(p.x, TOP + 0.24, p.z + R * 0.82)
         scene.add(label)
-        labelEntries.push({ tag, name })
+        labelEntries.push({ tag, name, islandId: data.id })
     }
     scene.add(lampPosts, lampBulbs, lampPools)
     const kit = createModelKit(random)
@@ -227,7 +235,8 @@ try {
     }
     document.querySelector('#scene-stats').textContent = `${islands.length} 座主題島 · ${buildings.records.length} 組模型 · ${bridgeCount} 座橋`
     let dirty = true
-    const explorer = createExplorer({ data: DATA, random, onChange: () => { dirty = true } })
+    const explorer = createExplorer({ data: DATA, random, onChange: () => { dirty = true }, onSelect: selection => interaction?.select(selection), onClose: () => interaction?.clear() })
+    interaction = createSelection({ scene, camera, controls, canvas, islands, grounds, buildings, labelEntries, explorer, reducedMotion, onChange: () => { dirty = true } })
     let minute = DATA.time.startMinute
     let paused = false
     let displayedMinute = -1
@@ -332,6 +341,7 @@ try {
             const dt = Math.min((now - previous) / 1000, 0.08)
             previous = now
             controls.update()
+            if (interaction.update(now)) dirty = true
             if (!document.hidden && !reducedMotion.matches && !paused) {
                 elapsed += dt
                 waterMaterial.uniforms.uTime.value = elapsed
@@ -346,6 +356,7 @@ try {
                 // Compact overlapping labels on small screens; full names remain accessible.
                 const rectangles = []
                 const obstacles = explorer.getObstacles()
+                interaction.layoutPins(obstacles)
                 for (const { tag, name } of labelEntries) {
                     tag.style.visibility = 'visible'
                     name.hidden = false

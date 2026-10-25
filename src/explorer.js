@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { createModelKit } from './model-kit.js'
 
-export function createExplorer({ data, random, onChange }) {
+export function createExplorer({ data, random, onChange, onSelect = () => {}, onClose = () => {} }) {
     const $ = selector => document.querySelector(selector)
     const index = $('#explore-index'), card = $('#detail-card'), list = $('#theme-list'), input = $('#island-search')
     const mobile = window.matchMedia('(max-width:800px)')
@@ -20,10 +20,10 @@ export function createExplorer({ data, random, onChange }) {
     function showIndex(open) {
         index.hidden = !open
         $('#toggle-index').setAttribute('aria-expanded', String(open))
-        if (open && mobile.matches) card.hidden = true
+        if (open && mobile.matches && !card.hidden) { card.hidden = true; onClose() }
         onChange()
     }
-    function hideCard() { card.hidden = true; if (returnFocus?.isConnected && returnFocus.getClientRects().length) returnFocus.focus(); else $('#toggle-index').focus(); onChange() }
+    function hideCard() { if (card.hidden) return; card.hidden = true; onClose(); if (returnFocus?.isConnected && returnFocus.getClientRects().length) returnFocus.focus(); else $('#toggle-index').focus(); onChange() }
     function showCard() {
         returnFocus = document.activeElement
         card.hidden = false
@@ -88,6 +88,7 @@ export function createExplorer({ data, random, onChange }) {
         island.items.forEach((item, n) => content.append(itemButton(island, item, n)))
         content.append(element('h3', '', '協作關係'), element('p', 'muted', '協作資料尚未建立，將在後續階段接入。'))
         showCard()
+        onSelect({ islandId: island.id, itemId: null })
     }
     function selectItem(islandId, itemId) {
         const island = data.islands.find(i => i.id === islandId), item = island?.items.find(i => i.id === itemId)
@@ -109,6 +110,7 @@ export function createExplorer({ data, random, onChange }) {
         Object.entries(data.stages).forEach(([id, label]) => { const node = element('li', id === item.stage ? 'current' : '', label.zh); if (id === item.stage) node.setAttribute('aria-current', 'step'); stages.append(node) }); content.append(stages)
         sources(content, item)
         showCard()
+        onSelect({ islandId: island.id, itemId: item.id })
     }
     function renderList() {
         const query = input.value.trim().normalize('NFKC').toLocaleLowerCase()
@@ -153,5 +155,5 @@ export function createExplorer({ data, random, onChange }) {
     document.addEventListener('keydown', event => { if (event.key === 'Escape') { if (!card.hidden) hideCard(); else if (!index.hidden) { showIndex(false); $('#toggle-index').focus() } } })
     mobile.addEventListener('change', () => { showIndex(!mobile.matches && card.hidden); onChange() })
     renderList(); showIndex(!mobile.matches)
-    return { selectIsland, selectItem, getObstacles: () => [index, card, $('.island-brand'), $('.scene-tools'), $('.time-panel')].filter(node => !node.hidden && node.getClientRects().length).map(node => node.getBoundingClientRect()) }
+    return { selectIsland, selectItem, closeCard: hideCard, closeIndex: () => showIndex(false), getObstacles: () => [index, card, $('.island-brand'), $('.scene-tools'), $('.time-panel')].filter(node => !node.hidden && node.getClientRects().length).map(node => node.getBoundingClientRect()) }
 }
