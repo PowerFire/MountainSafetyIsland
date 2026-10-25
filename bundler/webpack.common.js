@@ -8,6 +8,8 @@ module.exports = {
     output:
     {
         filename: 'bundle.[contenthash].js',
+        // Relative assets work both at / and at GitHub Pages /repository/.
+        publicPath: './',
         path: path.resolve(__dirname, '../dist')
     },
     devtool: 'source-map',

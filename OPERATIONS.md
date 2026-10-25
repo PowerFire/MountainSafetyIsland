@@ -49,16 +49,23 @@
 - 三步導覽首次開啟時自動出現，完成或略過後記住；localStorage 被封鎖時仍可操作，但下次可能再次出現。
 - 手動減少動態開關僅作用於本次頁面，不另行保存。
 
-完整開發進度請見 `PROGRESS.md`。第 13 步查核與本機驗收已記錄；剩餘限制與最終交付見 `PERFORMANCE_REPORT.md`，內容來源見 `SAFETY_REVIEW.md`。
+完整開發進度請見 `PROGRESS.md`。交付見 `DELIVERY.md`，GitHub Pages 發布步驟見 `DEPLOYMENT.md`；效能限制見 `PERFORMANCE_REPORT.md`，內容來源見 `SAFETY_REVIEW.md`。
 
 ## 驗收與正式版預覽
 
 ```bat
 npm test
 npm run build
+npm run test:delivery
 npm run preview
 ```
 
 正式版預覽為 http://localhost:8082/，只綁本機，不是公開部署。開啟 http://localhost:8082/?debug=1 可看 FPS、CPU 取樣與主通道 draw call；一般網址不顯示開發面板。Ctrl+C 停止預覽。
 
 `node scripts/write-review.cjs` 可從 DATA 重建來源／細項清單及 dist 檔案大小附錄；這項指令不會自動重新查證網頁內容，修改安全文字後仍須人工來源對照。效能報告引用短窗原始 JSON，不代表實體手機保證。
+
+## 交付包
+
+Windows 執行 `npm run release`，自動測試、建置與驗證後，在 releases 建立時間命名的資料夾與 ZIP。解壓後以 site 為靜態伺服器根目錄；documentation 放操作、來源與驗收說明，SHA256SUMS.json 可查完整性。ZIP 未附原始碼，後續維護請保留本專案。
+
+正式網站可放 GitHub Pages 專案子路徑。`npm run preview -- --base-path=/MountainSafetyIsland/` 可在本機模擬；開啟 http://localhost:8082/MountainSafetyIsland/ 。使用前先關閉佔用8082的舊預覽。公開發布請依 DEPLOYMENT.md 操作。

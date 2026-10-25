@@ -4,11 +4,16 @@ const fs = require('fs')
 const path = require('path')
 const zlib = require('zlib')
 const root = path.resolve(__dirname, '../dist')
-const port = Number(process.env.PORT || 8082)
+function createPreviewServer(basePath = '/') {
+const base = '/' + basePath.split('/').filter(Boolean).join('/')
+const prefix = base === '/' ? '/' : base + '/'
 const cache = new Map()
-http.createServer((req, res) => {
+return http.createServer((req, res) => {
     let pathname
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname) } catch (_) { res.writeHead(400); res.end(); return }
+    if (base !== '/' && pathname === base) { res.writeHead(308, { Location: prefix }); res.end(); return }
+    if (!pathname.startsWith(prefix)) { res.writeHead(404); res.end('Not found'); return }
+    pathname = '/' + pathname.slice(prefix.length)
     const file = path.resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname))
     if (!file.startsWith(root + path.sep)) { res.writeHead(403); res.end(); return }
     fs.stat(file, (error, stat) => {
@@ -24,4 +29,11 @@ http.createServer((req, res) => {
         if (compressed) res.setHeader('Content-Encoding', 'gzip')
         res.end(compressed ? body.gzip : body.raw)
     })
-}).listen(port, '127.0.0.1', () => console.log(`Production preview: http://localhost:${port}`))
+})
+}
+module.exports = { createPreviewServer }
+if (require.main === module) {
+    const port = Number(process.env.PORT || 8082)
+    const base = process.argv.find(value => value.startsWith('--base-path='))?.split('=')[1] || '/'
+    createPreviewServer(base).listen(port, '127.0.0.1', () => console.log(`Production preview: http://localhost:${port}${base === '/' ? '/' : '/' + base.split('/').filter(Boolean).join('/') + '/'}`))
+}
