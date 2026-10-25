@@ -117,6 +117,8 @@ export function createCollaboration({scene,islands,data,random,onChange}) {
         w.nameLabel=new CSS2DObject(bubble);scene.add(w.nameLabel)
     })
     const events=[]
+    let eventSequence = 0
+    function emit(event) { events.push({ ...event, id: ++eventSequence }); if(events.length>data.journal.maxEvents)events.splice(0,events.length-data.journal.maxEvents) }
     function visibility(){
         for(const mesh of lineMeshes){const flow=data.flows.find(f=>f.id===mesh.userData.flowId);mesh.visible=showLines||Boolean(active&&(active.flowId===flow.id||(!active.flowId&&(active.islandId===flow.from||active.islandId===flow.to))));mesh.material.uniforms.uSelected.value=active?.flowId===flow.id?1:0}
         document.querySelector('#flow-legend').hidden=!lineMeshes.some(m=>m.visible)
@@ -131,7 +133,11 @@ export function createCollaboration({scene,islands,data,random,onChange}) {
         walkers.forEach((w,i)=>{
             const phase=walkerPhase(time,w,data.collaboration.handoffSeconds),sample=sampleRoute(w.route,phase.distance)
             w.position.copy(sample.position);if(phase.reverse)sample.direction.negate()
-            if(w.state&&w.state!==phase.state){events.push({time,walkerId:w.id,flowId:w.flowId,type:phase.waiting?'arrive':'depart',islandId:phase.reverse?w.flow.to:w.flow.from});if(phase.waiting)events.push({time,walkerId:w.id,flowId:w.flowId,type:'handoff',islandId:phase.reverse?w.flow.to:w.flow.from});if(events.length>200)events.splice(0,events.length-200)}
+            if(w.state&&w.state!==phase.state){
+                const event={time,walkerId:w.id,flowId:w.flowId,islandId:phase.reverse?w.flow.to:w.flow.from}
+                if(phase.waiting)emit({...event,type:'arrive'})
+                else { emit({...event,type:'handoff'});emit({...event,type:'depart'}) }
+            }
             w.state=phase.state
             const ph=time*9+w.phase*20,swing=phase.waiting?0:Math.sin(ph),bounce=phase.waiting?0:Math.abs(Math.sin(ph))*.012
             root.position.copy(w.position);root.rotation.set(0,Math.atan2(sample.direction.x,sample.direction.z),0);root.scale.setScalar(size);root.updateMatrix()

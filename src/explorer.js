@@ -6,6 +6,7 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
     const index = $('#explore-index'), card = $('#detail-card'), list = $('#theme-list'), input = $('#island-search')
     const mobile = window.matchMedia('(max-width:800px)')
     let currentIsland = null, currentItem = null, currentFlow = null, returnFocus = null
+    let dayItems = new Set()
     const thumbnails = new Map()
     let previewRenderer
     function element(tag, className, text) {
@@ -21,12 +22,14 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
         index.hidden = !open
         $('#toggle-index').setAttribute('aria-expanded', String(open))
         if (open && mobile.matches && !card.hidden) { card.hidden = true; onClose() }
+        if (open && mobile.matches) $('.time-panel').open = false
         onChange()
     }
     function hideCard() { if (card.hidden) return; card.hidden = true; onClose(); if (returnFocus?.isConnected && returnFocus.getClientRects().length) returnFocus.focus(); else $('#toggle-index').focus(); onChange() }
     function showCard() {
         returnFocus = document.activeElement
         card.hidden = false
+        if (mobile.matches) $('.time-panel').open = false
         if (mobile.matches) showIndex(false)
         card.scrollTop = 0
         const title = $('#detail-content h2')
@@ -75,7 +78,9 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
         content.append(element('p', 'muted', `查閱日期：${item.reviewedAt}`), element('p', 'content-note', data.contentNote.zh))
     }
     function itemButton(island, item, number) {
-        return button(`${String(number + 1).padStart(2, '0')}  ${item.name.zh}`, () => selectItem(island.id, item.id), 'item-link')
+        const node = button(`${String(number + 1).padStart(2, '0')}  ${item.name.zh}`, () => selectItem(island.id, item.id), 'item-link')
+        node.dataset.itemId = item.id; node.classList.toggle('day-active', dayItems.has(item.id))
+        return node
     }
     function selectIsland(id) {
         const island = data.islands.find(i => i.id === id)
@@ -176,5 +181,5 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
     document.addEventListener('keydown', event => { if (event.key === 'Escape') { if (!card.hidden) hideCard(); else if (!index.hidden) { showIndex(false); $('#toggle-index').focus() } } })
     mobile.addEventListener('change', () => { showIndex(!mobile.matches && card.hidden); onChange() })
     renderList(); showIndex(!mobile.matches)
-    return { selectIsland, selectItem, selectFlow, closeCard: hideCard, closeIndex: () => showIndex(false), getObstacles: () => [index, card, $('.island-brand'), $('.scene-tools'), $('.time-panel'), $('.collaboration-controls'), $('#flow-legend')].filter(node => !node.hidden && node.getClientRects().length).map(node => node.getBoundingClientRect()) }
+    return { selectIsland, selectItem, selectFlow, setDayItems(ids) { dayItems = new Set(ids); document.querySelectorAll('[data-item-id]').forEach(node => node.classList.toggle('day-active', dayItems.has(node.dataset.itemId))) }, closeCard: hideCard, closeIndex: () => showIndex(false), getObstacles: () => [index, card, $('.island-brand'), $('.scene-tools'), $('.time-panel'), $('.collaboration-controls'), $('#flow-legend')].filter(node => !node.hidden && node.getClientRects().length).map(node => node.getBoundingClientRect()) }
 }

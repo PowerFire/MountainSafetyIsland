@@ -8,6 +8,7 @@ import { createEnvironment } from './environment.js'
 import { createExplorer } from './explorer.js'
 import { createSelection } from './selection.js'
 import { createCollaboration } from './collaboration.js'
+import { createJournal } from './journal.js'
 
 function mulberry32(seed) {
     return () => {
@@ -236,8 +237,9 @@ try {
     }
     document.querySelector('#scene-stats').textContent = `${islands.length} 座主題島 · ${buildings.records.length} 組模型 · ${bridgeCount} 座橋`
     let dirty = true
+    let journal = null
     const collaboration = createCollaboration({ scene, islands, data: DATA, random, onChange: () => { dirty = true } })
-    const explorer = createExplorer({ data: DATA, random, onChange: () => { dirty = true }, onSelect: selection => interaction?.select(selection), onClose: () => interaction?.clear() })
+    const explorer = createExplorer({ data: DATA, random, onChange: () => { dirty = true }, onSelect: selection => { journal?.close(); interaction?.select(selection) }, onClose: () => interaction?.clear() })
     interaction = createSelection({ scene, camera, controls, canvas, islands, grounds, buildings, labelEntries, explorer, collaboration, reducedMotion, onChange: () => { dirty = true } })
     collaboration.setNameHandler(id => { const walker = collaboration.getWalker(id); explorer.selectFlow(walker.flowId, id) })
     for (const [id, method] of [['show-walkers','setWalkers'], ['show-cargo','setCargo'], ['show-names','setNames'], ['show-flows','setLines']]) {
@@ -245,13 +247,17 @@ try {
         button.addEventListener('click', () => { const active = button.getAttribute('aria-pressed') !== 'true'; button.setAttribute('aria-pressed', String(active)); collaboration[method](active) })
     }
     let minute = DATA.time.startMinute
+    let day = 1
     let paused = false
     let displayedMinute = -1
+    journal = createJournal({ data: DATA, explorer, onChange: () => { dirty = true }, onPhase: ids => { interaction.setDayItems(ids); explorer.setDayItems(ids) } })
+    function jumpTime(nextMinute) { journal.manualJump(minute, nextMinute, day); minute = nextMinute; applyTime(); dirty = true }
     const timePanel = document.querySelector('.time-panel')
     const mobileLayout = window.matchMedia('(max-width: 800px)')
     const fitTimePanel = () => { timePanel.open = !mobileLayout.matches }
     fitTimePanel()
     mobileLayout.addEventListener('change', fitTimePanel)
+    timePanel.addEventListener('toggle', () => { if (timePanel.open && mobileLayout.matches) { journal.close(); explorer.closeIndex(); explorer.closeCard() } dirty = true })
     const timeDisplay = document.querySelector('#island-time')
     const slider = document.querySelector('#time-slider')
     const pauseButton = document.querySelector('#pause-time')
@@ -265,13 +271,14 @@ try {
         const button = document.createElement('button')
         button.type = 'button'
         button.textContent = `${preset.icon} ${preset.label}`
-        button.addEventListener('click', () => { minute = preset.minute; applyTime(); dirty = true })
+        button.addEventListener('click', () => jumpTime(preset.minute))
         document.querySelector('#time-presets').appendChild(button)
         return { button, minute: preset.minute }
     })
     const sunDirection = new THREE.Vector3()
     function applyTime() {
         minute = ((minute % 1440) + 1440) % 1440
+        journal.setPhase(minute)
         const index = keyframes.findIndex(frame => frame.minute > minute)
         const a = keyframes[index - 1], b = keyframes[index]
         const t = (minute - a.minute) / (b.minute - a.minute)
@@ -319,9 +326,12 @@ try {
         pauseButton.textContent = stopped ? '▶ 播放' : 'Ⅱ 暫停'
         timeState.textContent = reducedMotion.matches ? '減少動態' : paused ? '已暫停' : '自動播放'
         document.querySelector('#motion-note').hidden = !reducedMotion.matches
+        journal.setPlayback(!stopped, reducedMotion.matches)
         dirty = true
     }
-    slider.addEventListener('input', () => { minute = Number(slider.value); applyTime(); dirty = true })
+    let scrubStart = null
+    slider.addEventListener('input', () => { if (scrubStart === null) scrubStart = minute; minute = Number(slider.value); applyTime(); dirty = true })
+    slider.addEventListener('change', () => { if (scrubStart !== null) { journal.manualJump(scrubStart, minute, day); scrubStart = null } })
     pauseButton.addEventListener('click', () => { paused = !paused; updatePlayback() })
     applyTime()
     updatePlayback()
@@ -353,17 +363,19 @@ try {
                 elapsed += dt
                 waterMaterial.uniforms.uTime.value = elapsed
                 minute += dt * DATA.time.minutesPerSecond
+                if (minute >= 1440) day += Math.floor(minute / 1440)
                 applyTime()
                 dirty = true
             }
             if (dirty && !document.hidden) {
                 environment.update(elapsed, camera.position.distanceTo(controls.target))
                 collaboration.update(elapsed, camera.position.distanceTo(controls.target), reducedMotion.matches)
+                journal.sync(collaboration.events, minute, day)
                 renderer.render(scene, camera)
                 labels.render(scene, camera)
                 // Compact overlapping labels on small screens; full names remain accessible.
                 const rectangles = []
-                const obstacles = explorer.getObstacles()
+                const obstacles = [...explorer.getObstacles(), journal.getObstacle()].filter(Boolean)
                 interaction.layoutPins(obstacles)
                 collaboration.layoutNames(obstacles)
                 for (const { tag, name } of labelEntries) {

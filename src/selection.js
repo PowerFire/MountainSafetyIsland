@@ -4,7 +4,9 @@ import { sampleRoute } from './collaboration.js'
 
 export function createSelection({ scene, camera, controls, canvas, islands, grounds, buildings, labelEntries, explorer, collaboration, reducedMotion, onChange }) {
     let selected = null, flight = null, pointer = null, bird = false
+    let dayItems = new Set()
     const coral = new THREE.Color('#db6a41')
+    const yellow = new THREE.Color('#fcea8b')
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2()
     const pinGroup = new THREE.Group(); scene.add(pinGroup)
     const outlineMaterial = new THREE.LineBasicMaterial({ color: '#db6a41', depthTest: false, transparent: true, opacity: .9 })
@@ -30,12 +32,13 @@ export function createSelection({ scene, camera, controls, canvas, islands, grou
             mesh.userData.owners.forEach((owner, index) => {
                 const active = selected && activeIslands.includes(owner.islandId) && (!selected.itemId || owner.itemId === selected.itemId)
                 const color = new THREE.Color(mesh.userData.baseColors[index])
+                if (dayItems.has(owner.itemId)) color.lerp(yellow, .22)
                 if (active) color.lerp(coral, .22)
                 mesh.setColorAt(index, color)
             })
             mesh.instanceColor.needsUpdate = true
         }
-        labelEntries.forEach(({ tag, islandId }) => { tag.classList.toggle('selected', Boolean(selected && activeIslands.includes(islandId))); tag.classList.toggle('muted-label', Boolean(selected && !activeIslands.includes(islandId))); tag.setAttribute('aria-pressed', String(Boolean(selected && activeIslands.includes(islandId)))) })
+        labelEntries.forEach(({ tag, islandId }) => { tag.classList.toggle('day-active', buildings.records.some(record => record.islandId === islandId && dayItems.has(record.itemId))); tag.classList.toggle('selected', Boolean(selected && activeIslands.includes(islandId))); tag.classList.toggle('muted-label', Boolean(selected && !activeIslands.includes(islandId))); tag.setAttribute('aria-pressed', String(Boolean(selected && activeIslands.includes(islandId)))) })
     }
     function makePins(island) {
         clearPins()
@@ -124,6 +127,7 @@ export function createSelection({ scene, camera, controls, canvas, islands, grou
     })
     reducedMotion.addEventListener('change', () => { if (reducedMotion.matches && flight) { const { position, target } = flight; cancelFlight(); camera.position.copy(position); controls.target.copy(target); controls.update(); onChange() } })
     return {
+        setDayItems(ids) { dayItems = new Set(ids); updateColors(); onChange() },
         select, clear, reset() { clear(); resetBird(); controls.minPolarAngle = THREE.MathUtils.degToRad(25) },
         update(now) {
             if (!flight) return false
