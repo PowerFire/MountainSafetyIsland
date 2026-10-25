@@ -105,6 +105,29 @@ export const DATA = {
         app: { title: '內政部消防署 · 119報案APP', url: 'https://www.nfa.gov.tw/cht/index.php?code=list&ids=1600' },
         ecology: { title: 'NPS · Leave No Trace Seven Principles', url: 'https://www.nps.gov/articles/leave-no-trace-seven-principles.htm' }
     },
+    time: {
+        startMinute: 600,
+        minutesPerSecond: 10,
+        presets: [
+            { minute: 360, label: '清晨 06', icon: '☀' },
+            { minute: 720, label: '白天 12', icon: '☼' },
+            { minute: 1080, label: '黃昏 18', icon: '◒' },
+            { minute: 1260, label: '夜晚 21', icon: '☾' }
+        ],
+        // minute, skyTop, horizon, sunColor, sunI, hemiSky, hemiGround, hemiI, night, water
+        keyframes: [
+            [0, '1e2c58', '3f4f80', 'b4c2ff', 1.15, '94a2d8', '64566a', 1.85, 1, '5a88b2'],
+            [300, '26365f', '4c5688', 'b8c4ff', 1, '96a4da', '66586c', 1.85, 1, '5c8ab4'],
+            [360, '7f8fc4', 'f6c3a6', 'ffb48a', 1.3, 'f3c6b5', '6b5a5a', 1.1, .55, '8fb7c4'],
+            [450, 'a9d1ea', 'fbe6d3', 'ffe2c4', 2.4, 'eaf2f6', '8a7a68', 1.25, 0, '9fcfd6'],
+            [720, '9fd0ec', 'f4eee3', 'fff1de', 2.9, 'eef6fa', '8f8270', 1.35, 0, 'a9d8db'],
+            [960, 'a6cfe6', 'f8e7d2', 'ffe3c0', 2.5, 'f1efe8', '8a7a66', 1.25, 0, '9fcbd2'],
+            [1065, '8b8fc4', 'f7b98f', 'ff9f6a', 1.8, 'f6d2bc', '7d6660', 1.2, .3, '93a9bd'],
+            [1140, '5a5e9e', 'd99aa6', 'ff9a7a', 1.3, 'c0b2e0', '655868', 1.35, .75, '6a7cab'],
+            [1260, '22325f', '445488', 'c0ccff', 1.2, '98a8dc', '685a6e', 1.9, 1, '5a88b2'],
+            [1440, '1e2c58', '3f4f80', 'b4c2ff', 1.15, '94a2d8', '64566a', 1.85, 1, '5a88b2']
+        ]
+    },
     world: {
         radius: 2.02,
         spacing: 2.28,
