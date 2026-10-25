@@ -5,6 +5,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRe
 import { DATA } from './data.js'
 import { createModelKit, itemLayout } from './model-kit.js'
 import { createEnvironment } from './environment.js'
+import { createExplorer } from './explorer.js'
 
 function mulberry32(seed) {
     return () => {
@@ -226,6 +227,7 @@ try {
     }
     document.querySelector('#scene-stats').textContent = `${islands.length} 座主題島 · ${buildings.records.length} 組模型 · ${bridgeCount} 座橋`
     let dirty = true
+    const explorer = createExplorer({ data: DATA, random, onChange: () => { dirty = true } })
     let minute = DATA.time.startMinute
     let paused = false
     let displayedMinute = -1
@@ -343,13 +345,15 @@ try {
                 labels.render(scene, camera)
                 // Compact overlapping labels on small screens; full names remain accessible.
                 const rectangles = []
-                const brandRect = document.querySelector('.island-brand').getBoundingClientRect()
+                const obstacles = explorer.getObstacles()
                 for (const { tag, name } of labelEntries) {
+                    tag.style.visibility = 'visible'
                     name.hidden = false
                     let rect = tag.getBoundingClientRect()
                     const overlaps = other => rect.left < other.right + 4 && rect.right > other.left - 4 && rect.top < other.bottom + 4 && rect.bottom > other.top - 4
-                    if (overlaps(brandRect) || rectangles.some(overlaps)) { name.hidden = true; rect = tag.getBoundingClientRect() }
-                    rectangles.push(rect)
+                    if (obstacles.some(overlaps) || rectangles.some(overlaps)) { name.hidden = true; rect = tag.getBoundingClientRect() }
+                    if (obstacles.some(overlaps) || rectangles.some(overlaps)) tag.style.visibility = 'hidden'
+                    else rectangles.push(rect)
                 }
                 dirty = false
                 loading.hidden = true

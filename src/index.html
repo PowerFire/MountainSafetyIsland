@@ -15,9 +15,25 @@
         <p class="eyebrow">MOUNTAIN SAFETY ISLAND</p>
         <h1>登山安全島</h1>
         <p>每一份準備，連起平安回家的路。</p>
-        <p class="stage">山地與雲間探索 · 細項互動尚未開放</p>
+        <p class="stage">12 座主題島 · 50 個安全細項</p>
     </header>
-    <nav class="scene-tools" aria-label="鏡頭工具"><button id="overview" type="button">⌂ 全景</button></nav>
+    <nav class="scene-tools" aria-label="探索工具">
+        <button id="overview" type="button">⌂ 全景</button>
+        <button id="toggle-index" type="button" aria-controls="explore-index" aria-expanded="false">☰ 清單</button>
+    </nav>
+    <aside id="explore-index" class="explore-panel" aria-label="安全主題清單" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">THE SAFETY INDEX</p><h2>把準備，連起來。</h2></div><button id="close-index" type="button" aria-label="關閉清單">×</button></div>
+        <label class="search-label" for="island-search">搜尋主題與安全知識</label>
+        <div class="search-row"><input id="island-search" type="search" placeholder="搜尋主題、裝備、求援…" autocomplete="off"><button id="clear-search" type="button" aria-label="清除搜尋">清除</button></div>
+        <div class="index-tabs" role="tablist" aria-label="清單類型"><button id="themes-tab" role="tab" type="button" aria-selected="true" aria-controls="themes-panel">安全主題</button><button id="flows-tab" role="tab" type="button" aria-selected="false" aria-controls="flows-panel" tabindex="-1">協作關係 0</button></div>
+        <p id="search-count" class="muted" role="status" aria-live="polite"></p>
+        <div id="themes-panel" role="tabpanel" aria-labelledby="themes-tab"><div id="theme-list"></div></div>
+        <div id="flows-panel" role="tabpanel" aria-labelledby="flows-tab" hidden><p class="empty-message">協作關係尚未開放，目前可先探索 12 座主題島。</p></div>
+    </aside>
+    <aside id="detail-card" class="detail-card" aria-label="安全知識詳情" hidden>
+        <div class="panel-heading"><button id="detail-back" type="button">← 返回</button><button id="expand-detail" type="button" aria-pressed="false">↕ 展開</button><button id="close-detail" type="button" aria-label="關閉詳情">×</button></div>
+        <div id="detail-content"></div>
+    </aside>
     <details class="time-panel" aria-label="日夜時間控制" open>
         <summary>◷ 時間 <span id="compact-time">10:00</span></summary>
         <div class="time-content">
