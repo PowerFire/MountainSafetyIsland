@@ -1,9 +1,110 @@
 // 場景資料集中於 DATA；模型名稱是後續零件庫的識別碼，目前尚未實作模型。
 // axial 為 pointy-top 六角座標。相鄰座標將在場景階段自動建立橋樑。
+const bilingual = (zh, en) => ({ zh, en })
+
+// 每列：id、中文名稱、英文名稱、中文說明、英文說明、階段、來源、兩條中英重點。
+// 重點為教育摘要；不以虛構數字填充安全門檻。具體路線規定應另查當地公告。
+const ITEM_PLANS = {
+    planning: [
+        ['route', '選擇合適路線', 'Choose a Suitable Route', '先了解路線，再決定是否出發。', 'Understand the route before committing.', 'before', 'planning', '比較難度與自身經驗。', 'Match difficulty to experience.', '查詢當地路線資訊。', 'Check local route information.'],
+        ['team', '確認隊伍能力', 'Assess the Team', '把每位隊員的經驗與限制納入計畫。', 'Include every member’s experience and limits.', 'before', 'planning', '討論體能與技能。', 'Discuss fitness and skills.', '有健康疑慮先諮詢醫師。', 'Consult a clinician about health concerns.'],
+        ['backup', '準備替代行程', 'Prepare an Alternative', '讓天候或身體變化時有其他選擇。', 'Keep options for changing conditions.', 'before', 'planning', '預想行程取消的情境。', 'Consider reasons to cancel.', '準備較合適的替代活動。', 'Prepare a suitable alternative activity.'],
+        ['turnaround', '設定折返計畫', 'Plan the Return', '把回程也算進行程。', 'Include the return in the itinerary.', 'before', 'planning', '評估全程所需時間。', 'Estimate the entire trip duration.', '依隊況與天候調整目標。', 'Adjust goals to conditions and the team.'],
+        ['access', '查詢許可與封閉', 'Check Access Rules', '出發前確認目的地是否開放。', 'Check access before departure.', 'before', 'planning', '查閱管理單位公告。', 'Read land-manager notices.', '確認許可與預約需求。', 'Check permit and booking requirements.']
+    ],
+    weather: [
+        ['forecast', '查看目的地預報', 'Check the Local Forecast', '使用登山地點的預報安排活動。', 'Plan using the destination forecast.', 'before', 'weather', '查對預報地點。', 'Confirm the forecast location.', '留意山區預報的不確定性。', 'Allow for mountain forecast uncertainty.'],
+        ['updates', '留意天氣變化', 'Monitor Changing Weather', '預報不是抵達後的保證。', 'A forecast is not a guarantee.', 'during', 'weather', '出發前重新查看資料。', 'Recheck information before departure.', '把現場變化納入判斷。', 'Account for observed changes.'],
+        ['thunder', '辨識雷雨風險', 'Recognize Thunderstorms', '聽到雷聲就應尋求安全庇護。', 'Seek safe shelter when thunder is heard.', 'incident', 'lightning', '戶外沒有完全安全的雷雨位置。', 'No outdoor location is fully safe in a thunderstorm.', '尋找安全建築或封閉硬頂車輛。', 'Seek a safe building or enclosed hard-topped vehicle.'],
+        ['shelter', '認識避雷限制', 'Know Shelter Limits', '帳篷不能作為避雷保護。', 'A tent does not provide lightning protection.', 'incident', 'lightning', '開放式涼亭也不是安全避雷處。', 'Open-sided shelters are not safe lightning shelters.', '最後一聲雷後至少等 30 分鐘再恢復活動。', 'Wait at least 30 minutes after the last thunder before resuming.'],
+        ['cancel', '接受天候取消', 'Change Plans for Weather', '讓預報風險改變行程決定。', 'Let weather risk change the plan.', 'before', 'lightning', '高雷雨風險時取消戶外暴露。', 'Avoid outdoor exposure with high thunderstorm risk.', '事先討論安全撤離選項。', 'Discuss safe exit options in advance.']
+    ],
+    equipment: [
+        ['checklist', '核對裝備清單', 'Review the Gear List', '按行程逐項確認裝備。', 'Check equipment against the itinerary.', 'before', 'essentials', '依活動補充基本裝備。', 'Adapt essential gear to the activity.', '熟悉器材操作。', 'Know how to use your equipment.'],
+        ['layers', '準備備用衣物', 'Pack Extra Layers', '為可能遇到的天候準備衣物。', 'Pack clothing for possible conditions.', 'before', 'essentials', '帶上保暖與防雨衣物。', 'Include warm and rain layers.', '依環境調整配置。', 'Adapt the kit to the environment.'],
+        ['headlamp', '檢查頭燈電力', 'Check the Headlamp', '讓照明成為隨身裝備。', 'Keep lighting in your personal kit.', 'before', 'essentials', '確認頭燈能正常開啟。', 'Check that the headlamp works.', '準備備用電力。', 'Carry spare power.'],
+        ['repair', '準備維修工具', 'Carry Repair Tools', '為常見裝備問題準備工具。', 'Prepare for basic equipment problems.', 'before', 'essentials', '工具依活動選擇。', 'Choose tools for the activity.', '了解工具使用方式。', 'Understand how to use them.']
+    ],
+    fitness: [
+        ['limits', '認識體能限制', 'Know Physical Limits', '選擇自己能負荷的活動。', 'Choose an activity within your capacity.', 'before', 'planning', '評估耐力與活動時間。', 'Assess endurance and duration.', '避免以他人的能力代替自評。', 'Assess your own ability independently.'],
+        ['skills', '練習所需技能', 'Practice Required Skills', '出發前學會路線需要的技術。', 'Learn the skills the route requires.', 'before', 'planning', '確認特殊技術需求。', 'Identify specialist skills needed.', '不足時先受訓或換路線。', 'Train first or choose another route.'],
+        ['pace', '配合隊伍節奏', 'Match the Team’s Pace', '讓行進安排符合隊員狀態。', 'Adapt progress to the team.', 'during', 'planning', '持續確認隊伍能力。', 'Reassess team capacity.', '需要時調整行程。', 'Change the itinerary when needed.'],
+        ['rest', '重新評估狀態', 'Reassess Your Condition', '感到無法負荷時重新檢視目標。', 'Reconsider goals when the effort is too much.', 'during', 'planning', '注意身體與環境變化。', 'Notice physical and environmental changes.', '選擇能力範圍內的活動。', 'Stay within your capabilities.']
+    ],
+    navigation: [
+        ['offline', '下載離線地圖', 'Download Offline Maps', '出發前準備可離線使用的地圖。', 'Prepare maps that work offline.', 'before', 'navigation', '事先下載並練習操作。', 'Download and practice before departure.', '了解自身位置的顯示方式。', 'Learn how to display your location.'],
+        ['coordinates', '練習讀取座標', 'Read Your Coordinates', '學會取得可傳達的位置資訊。', 'Learn to obtain shareable location information.', 'before', 'navigation', '確認手機定位功能。', 'Check location services.', '練習讀取與傳送座標。', 'Practice reading and sharing coordinates.'],
+        ['map', '準備紙本備援', 'Carry a Paper Backup', '為電子裝置準備另一種導航方式。', 'Keep a navigation backup for electronics.', 'before', 'essentials', '攜帶紙本地圖。', 'Carry a paper map.', '預先學習地圖與指北針。', 'Learn map and compass use beforehand.'],
+        ['lost', '迷途停止亂走', 'Stop Wandering When Lost', '先冷靜定位，避免擴大搜索範圍。', 'Stay calm and locate yourself instead of wandering.', 'incident', 'lost', '不要慌亂下切。', 'Do not descend blindly.', '在安全位置求援並保暖。', 'Seek help and stay warm in a safe location.']
+    ],
+    supplies: [
+        ['food', '帶備用糧食', 'Carry Extra Food', '為行程延誤保留補給。', 'Keep food for unexpected delays.', 'before', 'essentials', '準備額外食物。', 'Pack extra food.', '選擇易食用的補給。', 'Choose easy-to-eat supplies.'],
+        ['water', '規劃飲水', 'Plan Drinking Water', '先確認飲水攜帶與補充安排。', 'Plan water supplies before departure.', 'before', 'essentials', '出發前備妥飲水。', 'Prepare water before setting out.', '別等到缺水才處理。', 'Do not wait until supplies run out.'],
+        ['treatment', '準備水處理', 'Prepare Water Treatment', '天然水源須納入處理計畫。', 'Include treatment in natural-water plans.', 'before', 'essentials', '確認可能水源。', 'Identify potential sources.', '攜帶適用處理用品。', 'Carry appropriate treatment supplies.'],
+        ['availability', '查核補給設施', 'Check Supply Facilities', '確認沿途是否真的有補給。', 'Check what supplies are actually available.', 'before', 'planning', '查詢飲水設施。', 'Check drinking-water facilities.', '查詢商店與服務資訊。', 'Check shops and service information.']
+    ],
+    terrain: [
+        ['trail', '確認步道狀況', 'Check Trail Conditions', '在出發前了解路面與地形。', 'Understand trail surfaces and terrain.', 'before', 'planning', '查閱路線地形資料。', 'Review terrain information.', '留意封閉與危險公告。', 'Check closures and hazard notices.'],
+        ['steep', '評估陡坡能力', 'Assess Steep Terrain', '技術與裝備要符合地形需求。', 'Match skills and equipment to terrain.', 'before', 'planning', '辨識技術路段。', 'Identify technical sections.', '超出能力就調整路線。', 'Change routes when demands exceed skills.'],
+        ['river', '避開危險溪流', 'Avoid Hazardous Rivers', '不要為了完成行程勉強涉水。', 'Do not force a crossing to finish a trip.', 'during', 'mountain', '遠離危險或湍急河流。', 'Avoid dangerous or fast-flowing rivers.', '選擇其他行程選項。', 'Choose another itinerary option.'],
+        ['cliffs', '遠離危險邊緣', 'Avoid Exposed Edges', '讓活動範圍遠離危險落差。', 'Keep activities away from dangerous drops.', 'during', 'mountain', '留在標示步道。', 'Stay on marked trails.', '避免接近懸崖與陡降邊緣。', 'Avoid cliffs and steep drop-offs.']
+    ],
+    altitude: [
+        ['gradual', '安排逐步適應', 'Ascend Gradually', '讓身體有時間適應高度。', 'Allow time to adjust to altitude.', 'before', 'altitude', '避免快速直上高海拔。', 'Avoid rapid ascent to high altitude.', '行程保留適應時間。', 'Allow acclimatization time.'],
+        ['symptoms', '辨識高山不適', 'Recognize Altitude Symptoms', '頭痛與噁心等變化需要重視。', 'Take headache and nausea seriously at altitude.', 'during', 'altitude', '留意頭痛、疲倦或食慾下降。', 'Watch for headache, fatigue or appetite loss.', '症狀未消失前不要再升高。', 'Do not ascend while symptoms persist.'],
+        ['descent', '惡化立即處理', 'Act on Worsening Symptoms', '休息仍惡化時需要下降與求援。', 'Descend and seek help if symptoms worsen at rest.', 'incident', 'altitude', '意識或協調異常屬嚴重警訊。', 'Confusion or poor coordination are serious signs.', '嚴重症狀應立即協助下降並求援。', 'Arrange immediate descent and help for severe symptoms.'],
+        ['consult', '行前醫療諮詢', 'Seek Pre-trip Medical Advice', '有疾病或用藥需求時先諮詢醫師。', 'Discuss health conditions and medication with a clinician.', 'before', 'altitude', '說明預定高度與行程。', 'Explain the planned altitude and itinerary.', '預防藥物由醫師評估。', 'Have preventive medication assessed by a clinician.']
+    ],
+    'first-aid': [
+        ['kit', '備妥急救包', 'Prepare a First-aid Kit', '讓急救用品符合自己的需求。', 'Adapt first-aid supplies to personal needs.', 'before', 'essentials', '檢查用品效期。', 'Check supply expiry dates.', '帶上個人必要藥品。', 'Carry necessary personal medication.'],
+        ['warmth', '保暖防雨待援', 'Stay Warm While Waiting', '受困時減少風雨造成的暴露。', 'Reduce exposure while awaiting help.', 'incident', 'lost', '注意保暖與防雨。', 'Stay warm and protected from rain.', '保存體力並保持聯絡。', 'Conserve energy and maintain contact.'],
+        ['shelter', '準備緊急庇護', 'Pack Emergency Shelter', '為意外停留準備遮蔽物。', 'Prepare shelter for an unexpected stop.', 'before', 'essentials', '攜帶適用緊急庇護裝備。', 'Carry suitable emergency shelter.', '依行程環境選擇。', 'Choose it for the trip environment.'],
+        ['report', '描述傷病狀況', 'Describe the Medical Situation', '向受理人員說明現場需要。', 'Explain needs to the emergency operator.', 'incident', 'reporting', '先提供位置資訊。', 'Give location information first.', '依受理人員提問回答。', 'Answer the operator’s questions.']
+    ],
+    communication: [
+        ['contact', '留下行程資料', 'Leave a Trip Plan', '讓山下的人知道你去哪裡。', 'Let someone know where you are going.', 'before', 'essentials', '告知目的地。', 'Share your destination.', '告知預計返回時間。', 'Share the expected return time.'],
+        ['coverage', '預想通訊限制', 'Plan for Limited Coverage', '山區不能保證隨時有訊號。', 'Do not assume continuous mountain coverage.', 'before', 'mountain', '偏遠地區通訊可能不良。', 'Remote areas may have poor connectivity.', '準備緊急聯絡方式。', 'Plan a way to call for help.'],
+        ['power', '準備手機電力', 'Prepare Phone Power', '把定位與聯絡所需電力列入檢查。', 'Include navigation and communication power in checks.', 'before', 'navigation', '檢查手機與行動電源。', 'Check the phone and power bank.', '熟悉離線定位操作。', 'Practice offline location use.'],
+        ['app', '熟悉報案工具', 'Learn Emergency Tools', '在需要前先認識報案工具功能。', 'Learn emergency-tool functions before they are needed.', 'before', 'app', '了解座標傳送方式。', 'Learn how to send coordinates.', '通訊功能仍受現場連線條件限制。', 'Communication still depends on available connectivity.']
+    ],
+    rescue: [
+        ['location', '先說所在位置', 'Give Your Location First', '讓求援對話從位置開始。', 'Start an emergency call with location.', 'incident', 'reporting', '提供地點、相對位置或座標。', 'Give a place, relative location or coordinates.', '考量通話可能中斷。', 'Allow for a possible dropped call.'],
+        ['call', '撥打 119 求援', 'Call 119 in Taiwan', '在臺灣遇緊急事故可撥 119。', 'Call 119 for an emergency in Taiwan.', 'incident', 'reporting', '說明需要報案。', 'State that you need emergency assistance.', '依受理人員引導回覆。', 'Follow the operator’s questions.'],
+        ['wait', '安全位置待援', 'Wait in a Safe Location', '求援後避免慌亂移動。', 'Avoid panicked movement after requesting help.', 'incident', 'lost', '不要盲目下切或亂闖。', 'Do not descend blindly or wander.', '保暖防雨並保存體力。', 'Stay warm, dry and conserve energy.'],
+        ['signal', '使用哨音示警', 'Signal with a Whistle', '以可辨識的訊號協助搜救。', 'Use a recognizable signal to assist rescuers.', 'incident', 'lost', '必要時使用哨音示警。', 'Use a whistle when needed.', '保持聯絡並回報現況。', 'Maintain contact and report the situation.']
+    ],
+    ecology: [
+        ['waste', '垃圾完整帶走', 'Pack Out Waste', '把食物殘渣與垃圾一起帶下山。', 'Carry out food scraps and other waste.', 'during', 'ecology', '離開前檢查休息處。', 'Inspect rest areas before leaving.', '帶走垃圾與剩食。', 'Carry out litter and leftovers.'],
+        ['wildlife', '尊重野生動物', 'Respect Wildlife', '觀察動物時保留牠們的空間。', 'Give wildlife space while observing.', 'during', 'ecology', '不接近或追逐。', 'Do not approach or follow.', '不餵食野生動物。', 'Do not feed wildlife.'],
+        ['camp', '使用既有營地', 'Use Established Campsites', '減少對地表與植被的改變。', 'Reduce disturbance to ground and vegetation.', 'during', 'ecology', '優先使用指定營地。', 'Prefer designated campsites.', '不挖溝或改造場地。', 'Do not dig trenches or alter sites.'],
+        ['nature', '保留自然原貌', 'Leave Nature in Place', '把自然物留在原來的位置。', 'Leave natural objects where they belong.', 'during', 'ecology', '不採集植物或石頭。', 'Leave plants and rocks in place.', '尊重其他訪客與自然聲音。', 'Respect other visitors and natural sounds.']
+    ]
+}
+
 export const DATA = {
     title: { zh: '登山安全島', en: 'Mountain Safety Island' },
     seed: 20261025,
-    contentStatus: 'theme-plan',
+    contentStatus: 'educational-draft',
+    reviewedAt: '2026-10-25',
+    contentNote: bilingual('教育摘要；實際行程以當地公告、即時狀況及專業判斷為準。', 'Educational summaries; use local notices, current conditions and professional judgment for actual trips.'),
+    stages: {
+        before: bilingual('行前', 'Before the trip'),
+        during: bilingual('登山途中', 'On the trail'),
+        incident: bilingual('異常發生時', 'During an incident')
+    },
+    sources: {
+        planning: { title: 'NPS · Trip Planning Guide', url: 'https://www.nps.gov/subjects/healthandsafety/trip-planning-guide.htm' },
+        essentials: { title: 'NPS · Ten Essentials', url: 'https://www.nps.gov/articles/10essentials.htm' },
+        weather: { title: '中央氣象署 · 氣象隨選平台', url: 'https://wede.cwa.gov.tw/' },
+        lightning: { title: 'NWS · Lightning Outdoors', url: 'https://www.weather.gov/safety/lightning-outdoors' },
+        navigation: { title: '國家公園署 · 登山迷途勿驚慌，自主定位利搜救', url: 'https://www.taiwan.nps.gov.tw/home/zh-tw/news/28418.html' },
+        altitude: { title: 'CDC · Travel to High Altitudes', url: 'https://wwwnc.cdc.gov/travel/page/travel-to-high-altitudes' },
+        mountain: { title: 'U.S. Department of State · Mountain Safety', url: 'https://travel.state.gov/en/international-travel/planning/safety-tips/mountain-safety.html' },
+        lost: { title: '臺中市消防局 · 登山安全三原則', url: 'https://eoc.taichung.gov.tw/2614868/2614887/3194978' },
+        reporting: { title: '內政部消防署 · 報案要領', url: 'https://www.nfa.gov.tw/cht/?code=list&ids=68' },
+        app: { title: '內政部消防署 · 119報案APP', url: 'https://www.nfa.gov.tw/cht/index.php?code=list&ids=1600' },
+        ecology: { title: 'NPS · Leave No Trace Seven Principles', url: 'https://www.nps.gov/articles/leave-no-trace-seven-principles.htm' }
+    },
     world: {
         radius: 2.02,
         spacing: 2.28,
@@ -97,7 +198,21 @@ export const DATA = {
             axial: { q: 0, r: 2 }, color: '#71806a', model: 'forest-campsite',
             topics: ['垃圾管理', '野生動物', '營地選擇', '環境尊重'], items: []
         }
-    ],
+    ].map(island => ({
+        ...island,
+        items: ITEM_PLANS[island.id].map(row => ({
+            id: `${island.id}-${row[0]}`,
+            name: bilingual(row[1], row[2]),
+            description: bilingual(row[3], row[4]),
+            stage: row[5],
+            sourceIds: [row[6]],
+            facts: [bilingual(row[7], row[8]), bilingual(row[9], row[10])],
+            model: island.model,
+            keywords: { zh: [row[1], island.name.zh, ...island.topics], en: [row[2], island.name.en] },
+            relatedIslandIds: [],
+            reviewedAt: '2026-10-25'
+        }))
+    })),
     // 後續內容階段填入，空陣列不代表已完成協作或時段功能。
     flows: [],
     dayCycle: []
