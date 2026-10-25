@@ -1,8 +1,11 @@
+import { MOBILE_QUERY, isMobileLayout } from './layout.js'
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
-import { DATA } from './data.js'
+import { DATA as SOURCE_DATA } from './data.js'
+import { tr, localizeData, localizeStatic } from './i18n.js'
+import { createAccessibility, createMotionPreference } from './accessibility.js'
 import { createModelKit, itemLayout } from './model-kit.js'
 import { createEnvironment } from './environment.js'
 import { createExplorer } from './explorer.js'
@@ -19,19 +22,22 @@ function mulberry32(seed) {
     }
 }
 
+const DATA = localizeData(SOURCE_DATA)
+localizeStatic()
 const loading = document.querySelector('#loading')
 function showError(error) {
     loading.hidden = false
     loading.setAttribute('role', 'alert')
-    loading.querySelector('h2').textContent = '場景暫時無法載入'
-    loading.querySelector('p').textContent = `請確認瀏覽器支援 WebGL，或重新整理頁面。${error.message || error}`
+    loading.querySelector('h2').textContent = tr('場景暫時無法載入')
+    loading.querySelector('p').textContent = tr('請確認瀏覽器支援 WebGL，或重新整理頁面。') + (error.message || error)
     console.error(error)
 }
 
 try {
     const random = mulberry32(DATA.seed)
     const { radius: R, spacing, top: TOP, waterY } = DATA.world
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const reducedMotion = createMotionPreference()
+    let guideOpen = false
     const scene = new THREE.Scene()
     const horizon = new THREE.Color('#f4eee3')
     scene.fog = new THREE.Fog(horizon, 42, 150)
@@ -48,7 +54,7 @@ try {
     document.querySelector('#world').appendChild(labels.domElement)
     const camera = new THREE.PerspectiveCamera(32, 1, 0.3, 320)
     const controls = new OrbitControls(camera, canvas)
-    controls.enableDamping = true
+    controls.enableDamping = !reducedMotion.matches
     controls.dampingFactor = 0.07
     controls.enablePan = false
     controls.minPolarAngle = THREE.MathUtils.degToRad(25)
@@ -66,8 +72,19 @@ try {
     function overview() {
         interaction?.reset()
         if (interaction) explorer.closeCard()
+        if (interaction) { journal?.close(); if (isMobileLayout()) explorer.closeIndex() }
         const aspect = window.innerWidth / window.innerHeight
-        const distance = aspect > 1.5 ? 38 : aspect > 0.9 ? 44 : 62
+        const direction = new THREE.Vector3(.24,.53,.87).normalize()
+        const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), direction).normalize()
+        const up = new THREE.Vector3().crossVectors(direction,right).normalize()
+        const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov/2))
+        let fit = 0
+        for (const island of islands) for (let n=0;n<6;n++) for (const y of [TOP,TOP+1.8]) {
+            const point = new THREE.Vector3(island.center.x+Math.cos(Math.PI/6+n*Math.PI/3)*R,y,island.center.z+Math.sin(Math.PI/6+n*Math.PI/3)*R).sub(center)
+            fit = Math.max(fit,point.dot(direction)+Math.abs(point.dot(right))*1.1/(tan*aspect),point.dot(direction)+Math.abs(point.dot(up))*1.15/tan)
+        }
+        const distance = Math.max(aspect > 1.5 ? 38 : aspect > .9 ? 44 : 62,fit+1)
+        controls.maxDistance = Math.max(70,distance+2)
         controls.target.copy(center)
         camera.position.copy(center).add(new THREE.Vector3(0.24, 0.53, 0.87).normalize().multiplyScalar(distance))
         controls.update()
@@ -212,7 +229,7 @@ try {
         })
     }
     const buildings = kit.build(scene)
-    const environment = createEnvironment({ scene, islands, center, world: DATA.world, config: DATA.environment, random, mobile: window.innerWidth <= 800 })
+    const environment = createEnvironment({ scene, islands, center, world: DATA.world, config: DATA.environment, random, mobile: isMobileLayout() })
     const adjacency = [[1, 0], [0, 1], [1, -1]]
     let bridgeCount = 0
     for (const a of islands) {
@@ -235,7 +252,7 @@ try {
             bridgeCount++
         }
     }
-    document.querySelector('#scene-stats').textContent = `${islands.length} 座主題島 · ${buildings.records.length} 組模型 · ${bridgeCount} 座橋`
+    document.querySelector('#scene-stats').textContent = tr(`${islands.length} 座主題島 · ${buildings.records.length} 組模型 · ${bridgeCount} 座橋`)
     let dirty = true
     let journal = null
     const collaboration = createCollaboration({ scene, islands, data: DATA, random, onChange: () => { dirty = true } })
@@ -253,7 +270,7 @@ try {
     journal = createJournal({ data: DATA, explorer, onChange: () => { dirty = true }, onPhase: ids => { interaction.setDayItems(ids); explorer.setDayItems(ids) } })
     function jumpTime(nextMinute) { journal.manualJump(minute, nextMinute, day); minute = nextMinute; applyTime(); dirty = true }
     const timePanel = document.querySelector('.time-panel')
-    const mobileLayout = window.matchMedia('(max-width: 800px)')
+    const mobileLayout = window.matchMedia(MOBILE_QUERY)
     const fitTimePanel = () => { timePanel.open = !mobileLayout.matches }
     fitTimePanel()
     mobileLayout.addEventListener('change', fitTimePanel)
@@ -320,11 +337,12 @@ try {
         }
     }
     function updatePlayback() {
-        const stopped = paused || reducedMotion.matches
+        const stopped = paused || reducedMotion.matches || guideOpen
+        controls.enableDamping = !reducedMotion.matches
         pauseButton.disabled = reducedMotion.matches
         pauseButton.setAttribute('aria-pressed', String(stopped))
-        pauseButton.textContent = stopped ? '▶ 播放' : 'Ⅱ 暫停'
-        timeState.textContent = reducedMotion.matches ? '減少動態' : paused ? '已暫停' : '自動播放'
+        pauseButton.textContent = tr(stopped ? '▶ 播放' : 'Ⅱ 暫停')
+        timeState.textContent = tr(reducedMotion.matches ? '減少動態' : paused || guideOpen ? '已暫停' : '自動播放')
         document.querySelector('#motion-note').hidden = !reducedMotion.matches
         journal.setPlayback(!stopped, reducedMotion.matches)
         dirty = true
@@ -342,7 +360,7 @@ try {
         camera.aspect = w / h
         camera.updateProjectionMatrix()
         renderer.setSize(w, h)
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, w <= 800 ? 1.4 : 1.75))
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileLayout() ? 1.4 : 1.75))
         labels.setSize(w, h)
         dirty = true
     }
@@ -353,13 +371,14 @@ try {
     canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); showError(new Error('WebGL 繪圖連線中斷，請重新整理。')) })
     document.addEventListener('visibilitychange', () => { dirty = true })
     let previous = performance.now(), elapsed = 0
+    const accessibility = createAccessibility({ onChange: () => { dirty = true }, onGuide: open => { guideOpen = open; if (open) interaction.stop(); updatePlayback() } })
     function tick(now) {
         try {
             const dt = Math.min((now - previous) / 1000, 0.08)
             previous = now
             controls.update()
             if (interaction.update(now)) dirty = true
-            if (!document.hidden && !reducedMotion.matches && !paused) {
+            if (!document.hidden && !reducedMotion.matches && !paused && !guideOpen) {
                 elapsed += dt
                 waterMaterial.uniforms.uTime.value = elapsed
                 minute += dt * DATA.time.minutesPerSecond
@@ -378,17 +397,23 @@ try {
                 const obstacles = [...explorer.getObstacles(), journal.getObstacle()].filter(Boolean)
                 interaction.layoutPins(obstacles)
                 collaboration.layoutNames(obstacles)
-                for (const { tag, name } of labelEntries) {
+                for (const entry of labelEntries) {
+                    const { tag, name } = entry
                     tag.style.visibility = 'visible'
                     name.hidden = false
                     let rect = tag.getBoundingClientRect()
-                    const overlaps = other => rect.left < other.right + 4 && rect.right > other.left - 4 && rect.top < other.bottom + 4 && rect.bottom > other.top - 4
-                    if (obstacles.some(overlaps) || rectangles.some(overlaps)) { name.hidden = true; rect = tag.getBoundingClientRect() }
-                    if (obstacles.some(overlaps) || rectangles.some(overlaps)) tag.style.visibility = 'hidden'
+                    const margin = entry.compact || entry.obscured ? 12 : 4
+                    const overlaps = other => rect.left < other.right + margin && rect.right > other.left - margin && rect.top < other.bottom + margin && rect.bottom > other.top - margin
+                    const outside = () => rect.left < 8 || rect.right > window.innerWidth-8 || rect.top < 8 || rect.bottom > window.innerHeight-8
+                    if (outside() || obstacles.some(overlaps) || rectangles.some(overlaps)) { name.hidden = true; rect = tag.getBoundingClientRect() }
+                    entry.compact = name.hidden
+                    entry.obscured = outside() || obstacles.some(overlaps) || rectangles.some(overlaps)
+                    if (entry.obscured) tag.style.visibility = 'hidden'
                     else rectangles.push(rect)
                 }
                 dirty = false
                 loading.hidden = true
+                accessibility.ready()
             }
             requestAnimationFrame(tick)
         } catch (error) { showError(error) }

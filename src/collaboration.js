@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+import { tr } from './i18n.js'
 
 // Twelve nodes per island: alternating hex vertices and edge midpoints.
 export function createWalkingNetwork(islands, top) {
@@ -113,7 +114,7 @@ export function createCollaboration({scene,islands,data,random,onChange}) {
     }
     walkers.forEach(w=>{
         w.sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:cargoTexture(w.flow.icon),depthTest:false,transparent:true}));w.sprite.scale.set(.22,.22,.22);w.sprite.userData.walkerId=w.id;scene.add(w.sprite)
-        const bubble=document.createElement('button');bubble.className='walker-name';bubble.type='button';bubble.textContent=`正在搬 ${w.flow.cargo.zh}`;bubble.hidden=true;w.bubble=bubble
+        const bubble=document.createElement('button');bubble.className='walker-name';bubble.type='button';bubble.textContent=tr(`正在搬 ${w.flow.cargo.zh}`);bubble.hidden=true;w.bubble=bubble
         w.nameLabel=new CSS2DObject(bubble);scene.add(w.nameLabel)
     })
     const events=[]

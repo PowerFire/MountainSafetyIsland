@@ -1,10 +1,12 @@
+import { MOBILE_QUERY } from './layout.js'
 import * as THREE from 'three'
 import { createModelKit } from './model-kit.js'
+import { tr } from './i18n.js'
 
 export function createExplorer({ data, random, onChange, onSelect = () => {}, onClose = () => {} }) {
     const $ = selector => document.querySelector(selector)
     const index = $('#explore-index'), card = $('#detail-card'), list = $('#theme-list'), input = $('#island-search')
-    const mobile = window.matchMedia('(max-width:800px)')
+    const mobile = window.matchMedia(MOBILE_QUERY)
     let currentIsland = null, currentItem = null, currentFlow = null, returnFocus = null
     let dayItems = new Set()
     const thumbnails = new Map()
@@ -12,7 +14,7 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
     function element(tag, className, text) {
         const node = document.createElement(tag)
         if (className) node.className = className
-        if (text !== undefined) node.textContent = text
+        if (text !== undefined) node.textContent = tr(text)
         return node
     }
     function button(text, action, className) {
@@ -104,7 +106,7 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
         currentIsland = island; currentItem = item; currentFlow = null
         const content = heading(island, item.name.zh, item.description.zh)
         const imageUrl = thumbnail(item.model)
-        if (imageUrl) { const image = element('img', 'model-thumbnail'); image.src = imageUrl; image.width = image.height = 160; image.alt = `${item.name.zh}的主題示意模型`; content.append(image) }
+        if (imageUrl) { const image = element('img', 'model-thumbnail'); image.src = imageUrl; image.width = image.height = 160; image.alt = tr(`${item.name.zh}的主題示意模型`); content.append(image) }
         content.append(element('h3', '', '重點提醒'))
         const facts = element('ul', 'fact-list')
         item.facts.forEach(fact => facts.append(element('li', '', fact.zh))); content.append(facts)
@@ -133,7 +135,7 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
         if (walkerId) content.append(element('p', 'muted', `搬運角色 ${walkerId} · 沿步道與橋樑往返`))
         showCard(); onSelect({ islandId: from.id, itemId: null, flowId: id, walkerId })
     }
-    $('#flows-tab').textContent = `協作關係 ${data.flows.length}`
+    $('#flows-tab').textContent = tr(`協作關係 ${data.flows.length}`)
     data.flows.forEach(flow => {
         const from = data.islands.find(i => i.id === flow.from), to = data.islands.find(i => i.id === flow.to)
         $('#flow-list').append(button(`${from.name.zh} → ${to.name.zh}｜${flow.cargo.zh}`, () => selectFlow(flow.id), 'item-link'))
@@ -154,7 +156,7 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
             items.forEach(item => details.append(itemButton(island, item, island.items.indexOf(item))))
             list.append(details)
         }
-        $('#search-count').textContent = query ? `找到 ${matches} 個細項` : `${data.islands.length} 座主題島 ／ ${matches} 個安全細項`
+        $('#search-count').textContent = tr(query ? `找到 ${matches} 個細項` : `${data.islands.length} 座主題島 ／ ${matches} 個安全細項`)
         if (!matches) list.append(element('p', 'empty-message', '沒有符合的項目，試試「地圖」、「保暖」或「求援」。'))
         onChange()
     }
@@ -172,7 +174,7 @@ export function createExplorer({ data, random, onChange, onSelect = () => {}, on
     $('#expand-detail').addEventListener('click', () => {
         const expanded = card.classList.toggle('is-expanded')
         $('#expand-detail').setAttribute('aria-pressed', String(expanded))
-        $('#expand-detail').textContent = expanded ? '↕ 收合' : '↕ 展開'
+        $('#expand-detail').textContent = tr(expanded ? '↕ 收合' : '↕ 展開')
         onChange()
     })
     $('#detail-back').addEventListener('click', () => { if (currentItem) selectIsland(currentIsland.id); else { const wasFlow = currentFlow; hideCard(); showIndex(true); if (wasFlow) selectTab(1); else input.focus() } })

@@ -1,3 +1,4 @@
+import { isMobileLayout } from './layout.js'
 import * as THREE from 'three'
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { sampleRoute } from './collaboration.js'
@@ -71,7 +72,7 @@ export function createSelection({ scene, camera, controls, canvas, islands, grou
         const focus = walker ? walker.position.clone().add(new THREE.Vector3(0,.2,0)) : route ? sampleRoute(route,route.length/2).position : record ? record.position.clone().add(new THREE.Vector3(0, record.size * .5, 0)) : island.center.clone().setY(.85)
         const offset = record || walker ? new THREE.Vector3(1.6, 2.5, 3.2) : new THREE.Vector3(2.75, 5.3, 6.2).multiplyScalar(route?Math.max(1,Math.min(2,route.length/10)):1)
         const target = focus.clone()
-        if (window.innerWidth > 800) {
+        if (!isMobileLayout()) {
             // Aim left of the model so it appears to the right of the left-hand card.
             const right = new THREE.Vector3(offset.z, 0, -offset.x).normalize()
             target.addScaledVector(right, record ? -.8 : -1.5)
@@ -114,8 +115,9 @@ export function createSelection({ scene, camera, controls, canvas, islands, grou
         fly(controls.target.clone().add(new THREE.Vector3(.01, 42, 6)), controls.target.clone())
     })
     document.addEventListener('keydown', event => {
+        if (document.querySelector('dialog[open]')) return
         if (event.key === 'Escape') { cancelFlight(); return }
-        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) || event.target.closest('input,textarea,select,button,[role="tab"],summary,[contenteditable="true"]')) return
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) || event.target.closest('#explore-index,#detail-card,#journal-panel,.time-panel,.scene-tools,.collaboration-controls,input,textarea,select,button,[role="tab"],summary,[contenteditable="true"]')) return
         event.preventDefault(); cancelFlight(); resetBird()
         const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target))
         if (event.key === 'ArrowLeft') spherical.theta -= .10
@@ -127,6 +129,7 @@ export function createSelection({ scene, camera, controls, canvas, islands, grou
     })
     reducedMotion.addEventListener('change', () => { if (reducedMotion.matches && flight) { const { position, target } = flight; cancelFlight(); camera.position.copy(position); controls.target.copy(target); controls.update(); onChange() } })
     return {
+        stop: cancelFlight,
         setDayItems(ids) { dayItems = new Set(ids); updateColors(); onChange() },
         select, clear, reset() { clear(); resetBird(); controls.minPolarAngle = THREE.MathUtils.degToRad(25) },
         update(now) {

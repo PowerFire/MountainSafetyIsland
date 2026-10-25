@@ -2,14 +2,17 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="theme-color" content="#fff8f4">
     <meta name="description" content="登山安全島：以互動立體島嶼探索行前準備、登山知識與安全協作。">
     <title>登山安全島｜Mountain Safety Island</title>
 </head>
 <body>
+    <a class="skip-link" href="#toggle-index">跳到主題清單按鈕</a>
+    <p id="keyboard-help" class="sr-only">方向鍵旋轉鏡頭，Esc 關閉面板。也可用主題清單探索所有內容。</p>
+    <p id="app-status" class="sr-only" role="status" aria-live="polite"></p>
     <main id="world" aria-label="登山安全島互動場景">
-        <canvas class="webgl" tabindex="0" aria-label="點選模型探索、拖曳或方向鍵旋轉、滾輪或雙指縮放 3D 島群"></canvas>
+        <canvas class="webgl" tabindex="0" aria-describedby="keyboard-help" aria-label="點選模型探索、拖曳或方向鍵旋轉、滾輪或雙指縮放 3D 島群"></canvas>
     </main>
     <header class="island-brand">
         <p class="eyebrow">MOUNTAIN SAFETY ISLAND</p>
@@ -22,6 +25,8 @@
         <button id="toggle-index" type="button" aria-controls="explore-index" aria-expanded="false">☰ 清單</button>
         <button id="bird-view" type="button" aria-pressed="false">▦ 鳥瞰</button>
         <button id="toggle-journal" type="button" aria-controls="journal-panel" aria-expanded="false">▤ 日誌</button>
+        <button id="open-help" type="button" aria-haspopup="dialog" aria-controls="help-dialog">? 說明</button>
+        <button id="switch-language" type="button" aria-label="Switch to English">EN</button>
     </nav>
     <aside id="explore-index" class="explore-panel" aria-label="安全主題清單" hidden>
         <div class="panel-heading"><div><p class="eyebrow">THE SAFETY INDEX</p><h2>把準備，連起來。</h2></div><button id="close-index" type="button" aria-label="關閉清單">×</button></div>
@@ -36,7 +41,7 @@
         <div class="panel-heading"><div><p class="eyebrow">MOUNTAIN JOURNAL</p><h2>登山日誌</h2></div><span id="journal-live" class="live-status">● LIVE</span><button id="close-journal" type="button" aria-label="關閉日誌">×</button></div>
         <details class="cycle-card" aria-label="目前一天情境"><summary><span id="cycle-title" class="cycle-title"></span><span id="cycle-range" class="eyebrow"></span></summary><p id="cycle-description"></p><details><summary id="cycle-item-summary">目前亮起的細項</summary><div id="cycle-items"></div></details></details>
         <label class="search-label" for="journal-filter">依協作關係篩選</label><select id="journal-filter"><option value="all">全部協作關係</option></select>
-        <div class="journal-toolbar"><p id="journal-count" class="muted" role="status" aria-live="polite">目前 0 筆事件</p><button id="clear-journal" type="button">清空日誌</button></div>
+        <div class="journal-toolbar"><p id="journal-count" class="muted" aria-live="off">目前 0 筆事件</p><button id="clear-journal" type="button">清空日誌</button></div>
         <ol id="journal-events" class="journal-events" aria-label="模擬事件，最新在前" aria-live="off"></ol>
         <p id="journal-empty" class="empty-message">小人到站後會留下抵達、交接與再次出發的紀錄。</p>
         <p class="muted">手動調時只切換日夜與情境，小人位置不重播。</p>
@@ -66,6 +71,14 @@
     </details>
     <div class="scene-hint">點選模型探索 · 拖曳或方向鍵旋轉 · 滾輪縮放<span id="scene-stats"></span></div>
     <div id="loading" class="loading" role="status" aria-live="polite"><h2>正在組合登山安全島…</h2><p>準備天空、水面與十二座主題島。</p></div>
+    <dialog id="help-dialog" aria-labelledby="help-title" aria-describedby="help-step-body">
+        <div class="panel-heading"><h2 id="help-title">操作說明</h2><button id="help-close" type="button" aria-label="關閉說明">×</button></div>
+        <p id="help-step-count" class="eyebrow" aria-live="polite"></p>
+        <h3 id="help-step-title" tabindex="-1"></h3><p id="help-step-body"></p>
+        <label class="motion-option"><input id="reduce-motion" type="checkbox"><span data-en="Reduce motion (stop autoplay and camera animation)">減少動態效果（停止自動播放與相機動畫）</span></label>
+        <p class="content-note" data-en="Educational scenarios, not live conditions or a recommended hiking timetable.">教學情境，非即時山況，也不是建議的登山時刻表。</p>
+        <div class="help-actions"><button id="help-skip" type="button">略過</button><button id="help-back" type="button">上一步</button><button id="help-next" type="button">下一步 →</button></div>
+    </dialog>
     <noscript><p class="no-script">請啟用 JavaScript，以瀏覽登山安全島互動場景。</p></noscript>
 </body>
 </html>
