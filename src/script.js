@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { DATA } from './data.js'
+import { createModelKit, itemLayout } from './model-kit.js'
 
 function mulberry32(seed) {
     return () => {
@@ -34,6 +35,7 @@ try {
     renderer.outputEncoding = THREE.sRGBEncoding // Three.js r126 API
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1
+    renderer.physicallyCorrectLights = true
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     const labels = new CSS2DRenderer()
@@ -187,6 +189,17 @@ try {
         labelEntries.push({ tag, name })
     }
     scene.add(lampPosts, lampBulbs, lampPools)
+    const kit = createModelKit(random)
+    for (const { data, center: p } of islands) {
+        const mainPosition = new THREE.Vector3(p.x + DATA.world.mainModelPosition.x, TOP + .025, p.z + DATA.world.mainModelPosition.z)
+        kit.place(data.model, mainPosition, DATA.world.mainModelSize, { islandId: data.id, itemId: null })
+        const slots = itemLayout(data.items.length)
+        data.items.forEach((item, index) => {
+            const slot = slots[index]
+            kit.place(item.model, new THREE.Vector3(p.x + slot.x, TOP + .025, p.z + slot.z), slot.size, { islandId: data.id, itemId: item.id })
+        })
+    }
+    const buildings = kit.build(scene)
     const adjacency = [[1, 0], [0, 1], [1, -1]]
     let bridgeCount = 0
     for (const a of islands) {
@@ -209,7 +222,7 @@ try {
             bridgeCount++
         }
     }
-    document.querySelector('#scene-stats').textContent = `${islands.length} 座主題島 · ${DATA.islands.reduce((n, i) => n + i.items.length, 0)} 個安全細項 · ${bridgeCount} 座橋`
+    document.querySelector('#scene-stats').textContent = `${islands.length} 座主題島 · ${buildings.records.length} 組模型 · ${bridgeCount} 座橋`
     let dirty = true
     let minute = DATA.time.startMinute
     let paused = false
@@ -257,6 +270,7 @@ try {
         waterMaterial.uniforms.uShallow.value.copy(a.water).lerp(b.water, t)
         waterMaterial.uniforms.uDeep.value.copy(waterMaterial.uniforms.uShallow.value).multiplyScalar(.72)
         lampMaterial.emissiveIntensity = night * 3.2
+        buildings.setNight(night)
         poolMaterial.opacity = night * .24
         const quantized = Math.floor(minute / 10) * 10
         const day = THREE.MathUtils.clamp((quantized - 360) / 720, 0, 1)
