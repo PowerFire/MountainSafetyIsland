@@ -128,6 +128,13 @@ export const DATA = {
             [1440, '1e2c58', '3f4f80', 'b4c2ff', 1.15, '94a2d8', '64566a', 1.85, 1, '5a88b2']
         ]
     },
+    environment: {
+        terrainSize: 170, terrainSegments: 160,
+        forestCount: 2600, mobileForestCount: 1100,
+        forestInnerRadius: 17, forestOuterRadius: 52,
+        cloudCount: 12, cloudSpeed: .12, detailDistance: 26,
+        islandTrees: ['pine', 'broadleaf', 'fruit', 'pine', 'broadleaf', 'fruit', 'pine', 'pine', 'cherry', 'palm', 'broadleaf', 'willow']
+    },
     world: {
         radius: 2.02,
         spacing: 2.28,

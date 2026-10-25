@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { DATA } from './data.js'
 import { createModelKit, itemLayout } from './model-kit.js'
+import { createEnvironment } from './environment.js'
 
 function mulberry32(seed) {
     return () => {
@@ -200,6 +201,7 @@ try {
         })
     }
     const buildings = kit.build(scene)
+    const environment = createEnvironment({ scene, islands, center, world: DATA.world, config: DATA.environment, random, mobile: window.innerWidth <= 800 })
     const adjacency = [[1, 0], [0, 1], [1, -1]]
     let bridgeCount = 0
     for (const a of islands) {
@@ -271,6 +273,7 @@ try {
         waterMaterial.uniforms.uDeep.value.copy(waterMaterial.uniforms.uShallow.value).multiplyScalar(.72)
         lampMaterial.emissiveIntensity = night * 3.2
         buildings.setNight(night)
+        environment.setNight(night, horizon)
         poolMaterial.opacity = night * .24
         const quantized = Math.floor(minute / 10) * 10
         const day = THREE.MathUtils.clamp((quantized - 360) / 720, 0, 1)
@@ -335,6 +338,7 @@ try {
                 dirty = true
             }
             if (dirty && !document.hidden) {
+                environment.update(elapsed, camera.position.distanceTo(controls.target))
                 renderer.render(scene, camera)
                 labels.render(scene, camera)
                 // Compact overlapping labels on small screens; full names remain accessible.
