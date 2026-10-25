@@ -1,0 +1,17 @@
+{
+  "mode": "production",
+  "viewport": "1366x900",
+  "pixelRatio": 1,
+  "sampleSeconds": 2,
+  "renderedFrames": 0,
+  "renderedFPS": 0,
+  "rafIntervalP95": 16.8,
+  "renderCpuP50": 0,
+  "renderCpuP95": 0,
+  "initialAssetEncodedBytes": 183232,
+  "drawCalls": 59,
+  "triangles": 446973,
+  "geometries": 53,
+  "textures": 6,
+  "programs": 17
+}

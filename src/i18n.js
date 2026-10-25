@@ -69,7 +69,7 @@ export function localizeData(source) {
     data.collaboration.note = 'Roles and collaboration links are educational illustrations, not real agency operations or incident reports.'
     data.journal.note = 'Simulated events from this visit, not live mountain conditions or real rescue records.'
     data.time.presets.forEach((preset,i) => preset.label = ['Dawn 06','Day 12','Dusk 18','Night 21'][i])
-    const sources = { weather:'Central Weather Administration · Weather platform', navigation:'Taiwan National Park Service · Location awareness', lost:'Taichung Fire Bureau · Mountain safety', reporting:'National Fire Agency · Emergency reporting', app:'National Fire Agency · 119 reporting app' }
+    const sources = { weather:'Central Weather Administration · Weather platform', navigation:'Taiwan National Park Service · Location awareness', lost:'Taichung Fire Bureau · Mountain safety', reporting:'National Fire Agency · Emergency reporting', app:'Nantou Fire Bureau · 119 app communication requirements' }
     Object.entries(sources).forEach(([id,title]) => data.sources[id].title = title)
     return data
 }

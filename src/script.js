@@ -12,6 +12,8 @@ import { createExplorer } from './explorer.js'
 import { createSelection } from './selection.js'
 import { createCollaboration } from './collaboration.js'
 import { createJournal } from './journal.js'
+import { createDiagnostics } from './diagnostics.js'
+import { batchStaticWorld } from './static-world.js'
 
 function mulberry32(seed) {
     return () => {
@@ -49,6 +51,10 @@ try {
     renderer.physicallyCorrectLights = true
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    // Casters are static. Rebuild the map only when the quantized sun position changes.
+    renderer.shadowMap.autoUpdate = false
+    renderer.shadowMap.needsUpdate = true
+    const diagnostics = createDiagnostics(renderer)
     const labels = new CSS2DRenderer()
     labels.domElement.className = 'labels'
     document.querySelector('#world').appendChild(labels.domElement)
@@ -252,12 +258,13 @@ try {
             bridgeCount++
         }
     }
+    batchStaticWorld(scene)
     document.querySelector('#scene-stats').textContent = tr(`${islands.length} 座主題島 · ${buildings.records.length} 組模型 · ${bridgeCount} 座橋`)
-    let dirty = true
+    let dirty = true, labelsDirty = true, lastLabelsAt = -Infinity
     let journal = null
-    const collaboration = createCollaboration({ scene, islands, data: DATA, random, onChange: () => { dirty = true } })
-    const explorer = createExplorer({ data: DATA, random, onChange: () => { dirty = true }, onSelect: selection => { journal?.close(); interaction?.select(selection) }, onClose: () => interaction?.clear() })
-    interaction = createSelection({ scene, camera, controls, canvas, islands, grounds, buildings, labelEntries, explorer, collaboration, reducedMotion, onChange: () => { dirty = true } })
+    const collaboration = createCollaboration({ scene, islands, data: DATA, random, onChange: () => { dirty = true; labelsDirty = true } })
+    const explorer = createExplorer({ data: DATA, random, onChange: () => { dirty = true; labelsDirty = true }, onSelect: selection => { journal?.close(); interaction?.select(selection) }, onClose: () => interaction?.clear() })
+    interaction = createSelection({ scene, camera, controls, canvas, islands, grounds, buildings, labelEntries, explorer, collaboration, reducedMotion, onChange: () => { dirty = true; labelsDirty = true } })
     collaboration.setNameHandler(id => { const walker = collaboration.getWalker(id); explorer.selectFlow(walker.flowId, id) })
     for (const [id, method] of [['show-walkers','setWalkers'], ['show-cargo','setCargo'], ['show-names','setNames'], ['show-flows','setLines']]) {
         const button = document.querySelector(`#${id}`)
@@ -267,7 +274,7 @@ try {
     let day = 1
     let paused = false
     let displayedMinute = -1
-    journal = createJournal({ data: DATA, explorer, onChange: () => { dirty = true }, onPhase: ids => { interaction.setDayItems(ids); explorer.setDayItems(ids) } })
+    journal = createJournal({ data: DATA, explorer, onChange: () => { dirty = true; labelsDirty = true }, onPhase: ids => { interaction.setDayItems(ids); explorer.setDayItems(ids) } })
     function jumpTime(nextMinute) { journal.manualJump(minute, nextMinute, day); minute = nextMinute; applyTime(); dirty = true }
     const timePanel = document.querySelector('.time-panel')
     const mobileLayout = window.matchMedia(MOBILE_QUERY)
@@ -293,6 +300,7 @@ try {
         return { button, minute: preset.minute }
     })
     const sunDirection = new THREE.Vector3()
+    let shadowMinute = -1
     function applyTime() {
         minute = ((minute % 1440) + 1440) % 1440
         journal.setPhase(minute)
@@ -318,6 +326,7 @@ try {
         environment.setNight(night, horizon)
         poolMaterial.opacity = night * .24
         const quantized = Math.floor(minute / 10) * 10
+        if (quantized !== shadowMinute) { renderer.shadowMap.needsUpdate = true; shadowMinute = quantized }
         const day = THREE.MathUtils.clamp((quantized - 360) / 720, 0, 1)
         const azimuth = Math.PI * (.15 + .7 * day)
         const elevation = .35 + Math.sin(day * Math.PI) * .75
@@ -353,7 +362,7 @@ try {
     pauseButton.addEventListener('click', () => { paused = !paused; updatePlayback() })
     applyTime()
     updatePlayback()
-    controls.addEventListener('change', () => { dirty = true })
+    controls.addEventListener('change', () => { dirty = true; labelsDirty = true })
     document.querySelector('#overview').addEventListener('click', overview)
     const resize = () => {
         const w = window.innerWidth, h = window.innerHeight
@@ -362,6 +371,7 @@ try {
         renderer.setSize(w, h)
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileLayout() ? 1.4 : 1.75))
         labels.setSize(w, h)
+        labelsDirty = true
         dirty = true
     }
     new ResizeObserver(resize).observe(document.querySelector('#world'))
@@ -371,7 +381,7 @@ try {
     canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); showError(new Error('WebGL 繪圖連線中斷，請重新整理。')) })
     document.addEventListener('visibilitychange', () => { dirty = true })
     let previous = performance.now(), elapsed = 0
-    const accessibility = createAccessibility({ onChange: () => { dirty = true }, onGuide: open => { guideOpen = open; if (open) interaction.stop(); updatePlayback() } })
+    const accessibility = createAccessibility({ onChange: () => { dirty = true; labelsDirty = true }, onGuide: open => { guideOpen = open; if (open) interaction.stop(); updatePlayback() } })
     function tick(now) {
         try {
             const dt = Math.min((now - previous) / 1000, 0.08)
@@ -387,10 +397,13 @@ try {
                 dirty = true
             }
             if (dirty && !document.hidden) {
+                diagnostics.begin()
                 environment.update(elapsed, camera.position.distanceTo(controls.target))
                 collaboration.update(elapsed, camera.position.distanceTo(controls.target), reducedMotion.matches)
                 journal.sync(collaboration.events, minute, day)
                 renderer.render(scene, camera)
+                const movingNames = document.querySelector('#show-names').getAttribute('aria-pressed') === 'true' && camera.position.distanceTo(controls.target) < 14
+                if (labelsDirty || (movingNames && now - lastLabelsAt >= 100)) {
                 labels.render(scene, camera)
                 // Compact overlapping labels on small screens; full names remain accessible.
                 const rectangles = []
@@ -411,10 +424,15 @@ try {
                     if (entry.obscured) tag.style.visibility = 'hidden'
                     else rectangles.push(rect)
                 }
+                labelsDirty = false
+                lastLabelsAt = now
+                }
                 dirty = false
                 loading.hidden = true
                 accessibility.ready()
+                diagnostics.end()
             }
+            diagnostics.frame(now)
             requestAnimationFrame(tick)
         } catch (error) { showError(error) }
     }

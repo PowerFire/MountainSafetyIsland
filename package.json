@@ -3,7 +3,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "node --openssl-legacy-provider ./node_modules/webpack/bin/webpack.js --config ./bundler/webpack.prod.js",
-    "dev": "node --openssl-legacy-provider ./node_modules/webpack/bin/webpack.js serve --config ./bundler/webpack.dev.js"
+    "dev": "node --openssl-legacy-provider ./node_modules/webpack/bin/webpack.js serve --config ./bundler/webpack.dev.js",
+    "preview": "node ./scripts/serve-preview.cjs",
+    "test": "node ./scripts/verify.cjs"
   },
   "dependencies": {
     "@babel/core": "^7.13.1",

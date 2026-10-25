@@ -49,4 +49,16 @@
 - 三步導覽首次開啟時自動出現，完成或略過後記住；localStorage 被封鎖時仍可操作，但下次可能再次出現。
 - 手動減少動態開關僅作用於本次頁面，不另行保存。
 
-完整開發進度請見 `PROGRESS.md`。目前仍待第 13 步整體內容與效能驗收，以及第 14 步最終交付。
+完整開發進度請見 `PROGRESS.md`。第 13 步查核與本機驗收已記錄；剩餘限制與最終交付見 `PERFORMANCE_REPORT.md`，內容來源見 `SAFETY_REVIEW.md`。
+
+## 驗收與正式版預覽
+
+```bat
+npm test
+npm run build
+npm run preview
+```
+
+正式版預覽為 http://localhost:8082/，只綁本機，不是公開部署。開啟 http://localhost:8082/?debug=1 可看 FPS、CPU 取樣與主通道 draw call；一般網址不顯示開發面板。Ctrl+C 停止預覽。
+
+`node scripts/write-review.cjs` 可從 DATA 重建來源／細項清單及 dist 檔案大小附錄；這項指令不會自動重新查證網頁內容，修改安全文字後仍須人工來源對照。效能報告引用短窗原始 JSON，不代表實體手機保證。

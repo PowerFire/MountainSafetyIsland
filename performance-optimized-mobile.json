@@ -1,0 +1,15 @@
+{
+  "mode": "development",
+  "viewport": "390x844",
+  "pixelRatio": 1,
+  "sampleSeconds": 2.02,
+  "renderedFPS": 60,
+  "rafIntervalP95": 16.9,
+  "renderCpuP50": 2,
+  "renderCpuP95": 2.3,
+  "drawCalls": 44,
+  "triangles": 295016,
+  "geometries": 44,
+  "textures": 2,
+  "programs": 14
+}

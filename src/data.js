@@ -1,4 +1,4 @@
-// 場景資料集中於 DATA；模型名稱是後續零件庫的識別碼，目前尚未實作模型。
+// 場景資料集中於 DATA；model 對應 model-kit.js 的程序模型。
 // axial 為 pointy-top 六角座標。相鄰座標將在場景階段自動建立橋樑。
 const bilingual = (zh, en) => ({ zh, en })
 
@@ -16,7 +16,7 @@ const ITEM_PLANS = {
         ['forecast', '查看目的地預報', 'Check the Local Forecast', '使用登山地點的預報安排活動。', 'Plan using the destination forecast.', 'before', 'weather', '查對預報地點。', 'Confirm the forecast location.', '留意山區預報的不確定性。', 'Allow for mountain forecast uncertainty.'],
         ['updates', '留意天氣變化', 'Monitor Changing Weather', '預報不是抵達後的保證。', 'A forecast is not a guarantee.', 'during', 'weather', '出發前重新查看資料。', 'Recheck information before departure.', '把現場變化納入判斷。', 'Account for observed changes.'],
         ['thunder', '辨識雷雨風險', 'Recognize Thunderstorms', '聽到雷聲就應尋求安全庇護。', 'Seek safe shelter when thunder is heard.', 'incident', 'lightning', '戶外沒有完全安全的雷雨位置。', 'No outdoor location is fully safe in a thunderstorm.', '尋找安全建築或封閉硬頂車輛。', 'Seek a safe building or enclosed hard-topped vehicle.'],
-        ['shelter', '認識避雷限制', 'Know Shelter Limits', '帳篷不能作為避雷保護。', 'A tent does not provide lightning protection.', 'incident', 'lightning', '開放式涼亭也不是安全避雷處。', 'Open-sided shelters are not safe lightning shelters.', '最後一聲雷後至少等 30 分鐘再恢復活動。', 'Wait at least 30 minutes after the last thunder before resuming.'],
+        ['shelter', '認識避雷限制', 'Know Shelter Limits', '帳篷不能作為避雷保護。', 'A tent does not provide lightning protection.', 'incident', 'lightning', '開放式涼亭也不是安全避雷處。', 'Open-sided shelters are not safe lightning shelters.', '最後一聲雷後至少等 30 分鐘，再依天候評估是否恢復活動。', 'Wait at least 30 minutes after the last thunder, then reassess the weather before resuming.'],
         ['cancel', '接受天候取消', 'Change Plans for Weather', '讓預報風險改變行程決定。', 'Let weather risk change the plan.', 'before', 'lightning', '高雷雨風險時取消戶外暴露。', 'Avoid outdoor exposure with high thunderstorm risk.', '事先討論安全撤離選項。', 'Discuss safe exit options in advance.']
     ],
     equipment: [
@@ -35,7 +35,7 @@ const ITEM_PLANS = {
         ['offline', '下載離線地圖', 'Download Offline Maps', '出發前準備可離線使用的地圖。', 'Prepare maps that work offline.', 'before', 'navigation', '事先下載並練習操作。', 'Download and practice before departure.', '了解自身位置的顯示方式。', 'Learn how to display your location.'],
         ['coordinates', '練習讀取座標', 'Read Your Coordinates', '學會取得可傳達的位置資訊。', 'Learn to obtain shareable location information.', 'before', 'navigation', '確認手機定位功能。', 'Check location services.', '練習讀取與傳送座標。', 'Practice reading and sharing coordinates.'],
         ['map', '準備紙本備援', 'Carry a Paper Backup', '為電子裝置準備另一種導航方式。', 'Keep a navigation backup for electronics.', 'before', 'essentials', '攜帶紙本地圖。', 'Carry a paper map.', '預先學習地圖與指北針。', 'Learn map and compass use beforehand.'],
-        ['lost', '迷途停止亂走', 'Stop Wandering When Lost', '先冷靜定位，避免擴大搜索範圍。', 'Stay calm and locate yourself instead of wandering.', 'incident', 'lost', '不要慌亂下切。', 'Do not descend blindly.', '在安全位置求援並保暖。', 'Seek help and stay warm in a safe location.']
+        ['lost', '迷途停止亂走', 'Stop Wandering When Lost', '先冷靜定位，避免擴大搜索範圍。', 'Stay calm and locate yourself instead of wandering.', 'incident', 'lost', '不要慌亂下切。', 'Do not descend blindly.', '若有立即危險先避開；位置安全後定位、求援並保暖。', 'Move away from immediate danger if necessary, then locate yourself, request help and stay warm in a safe place.']
     ],
     supplies: [
         ['food', '帶備用糧食', 'Carry Extra Food', '為行程延誤保留補給。', 'Keep food for unexpected delays.', 'before', 'essentials', '準備額外食物。', 'Pack extra food.', '選擇易食用的補給。', 'Choose easy-to-eat supplies.'],
@@ -50,9 +50,9 @@ const ITEM_PLANS = {
         ['cliffs', '遠離危險邊緣', 'Avoid Exposed Edges', '讓活動範圍遠離危險落差。', 'Keep activities away from dangerous drops.', 'during', 'mountain', '留在標示步道。', 'Stay on marked trails.', '避免接近懸崖與陡降邊緣。', 'Avoid cliffs and steep drop-offs.']
     ],
     altitude: [
-        ['gradual', '安排逐步適應', 'Ascend Gradually', '讓身體有時間適應高度。', 'Allow time to adjust to altitude.', 'before', 'altitude', '避免快速直上高海拔。', 'Avoid rapid ascent to high altitude.', '行程保留適應時間。', 'Allow acclimatization time.'],
+        ['gradual', '安排逐步適應', 'Ascend Gradually', '讓身體有時間適應高度。', 'Allow time to adjust to altitude.', 'before', 'altitude', '避免快速直上高海拔。', 'Avoid rapid ascent to high altitude.', '體能好也可能高山不適，行程仍須保留適應時間。', 'Fitness does not prevent altitude illness; allow time to acclimatize.'],
         ['symptoms', '辨識高山不適', 'Recognize Altitude Symptoms', '頭痛與噁心等變化需要重視。', 'Take headache and nausea seriously at altitude.', 'during', 'altitude', '留意頭痛、疲倦或食慾下降。', 'Watch for headache, fatigue or appetite loss.', '症狀未消失前不要再升高。', 'Do not ascend while symptoms persist.'],
-        ['descent', '惡化立即處理', 'Act on Worsening Symptoms', '休息仍惡化時需要下降與求援。', 'Descend and seek help if symptoms worsen at rest.', 'incident', 'altitude', '意識或協調異常屬嚴重警訊。', 'Confusion or poor coordination are serious signs.', '嚴重症狀應立即協助下降並求援。', 'Arrange immediate descent and help for severe symptoms.'],
+        ['descent', '惡化立即處理', 'Act on Worsening Symptoms', '休息仍惡化時需要下降與求援。', 'Descend and seek help if symptoms worsen at rest.', 'incident', 'altitude', '靜止時喘、意識或步態異常都是嚴重警訊。', 'Breathlessness at rest, confusion or poor coordination are serious warning signs.', '嚴重症狀應立即求援，安排有人協助、減少耗力的下降或撤離。', 'Seek urgent help and arrange assisted descent or evacuation with minimal exertion for severe symptoms.'],
         ['consult', '行前醫療諮詢', 'Seek Pre-trip Medical Advice', '有疾病或用藥需求時先諮詢醫師。', 'Discuss health conditions and medication with a clinician.', 'before', 'altitude', '說明預定高度與行程。', 'Explain the planned altitude and itinerary.', '預防藥物由醫師評估。', 'Have preventive medication assessed by a clinician.']
     ],
     'first-aid': [
@@ -70,7 +70,7 @@ const ITEM_PLANS = {
     rescue: [
         ['location', '先說所在位置', 'Give Your Location First', '讓求援對話從位置開始。', 'Start an emergency call with location.', 'incident', 'reporting', '提供地點、相對位置或座標。', 'Give a place, relative location or coordinates.', '考量通話可能中斷。', 'Allow for a possible dropped call.'],
         ['call', '撥打 119 求援', 'Call 119 in Taiwan', '在臺灣遇緊急事故可撥 119。', 'Call 119 for an emergency in Taiwan.', 'incident', 'reporting', '說明需要報案。', 'State that you need emergency assistance.', '依受理人員引導回覆。', 'Follow the operator’s questions.'],
-        ['wait', '安全位置待援', 'Wait in a Safe Location', '求援後避免慌亂移動。', 'Avoid panicked movement after requesting help.', 'incident', 'lost', '不要盲目下切或亂闖。', 'Do not descend blindly or wander.', '保暖防雨並保存體力。', 'Stay warm, dry and conserve energy.'],
+        ['wait', '安全位置待援', 'Wait in a Safe Location', '求援後避免慌亂移動。', 'Avoid panicked movement after requesting help.', 'incident', 'lost', '位置安全時原地待援；有立即危險時先避開並回報新位置。', 'Stay put when safe; if immediate danger requires moving, report the new location.', '保暖防雨並保存體力。', 'Stay warm, dry and conserve energy.'],
         ['signal', '使用哨音示警', 'Signal with a Whistle', '以可辨識的訊號協助搜救。', 'Use a recognizable signal to assist rescuers.', 'incident', 'lost', '必要時使用哨音示警。', 'Use a whistle when needed.', '保持聯絡並回報現況。', 'Maintain contact and report the situation.']
     ],
     ecology: [
@@ -84,7 +84,7 @@ const ITEM_PLANS = {
 export const DATA = {
     title: { zh: '登山安全島', en: 'Mountain Safety Island' },
     seed: 20261025,
-    contentStatus: 'educational-draft',
+    contentStatus: 'source-reviewed-demo',
     reviewedAt: '2026-10-25',
     contentNote: bilingual('教育摘要；實際行程以當地公告、即時狀況及專業判斷為準。', 'Educational summaries; use local notices, current conditions and professional judgment for actual trips.'),
     stages: {
@@ -93,6 +93,8 @@ export const DATA = {
         incident: bilingual('異常發生時', 'During an incident')
     },
     sources: {
+        emergency: { title: 'NPS · Outdoor Emergency Plan', url: 'https://www.nps.gov/articles/gtgemergencyplan.htm' },
+        altitudeSevere: { title: 'CDC Yellow Book 2026 · Altitude Illness', url: 'https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html' },
         planning: { title: 'NPS · Trip Planning Guide', url: 'https://www.nps.gov/subjects/healthandsafety/trip-planning-guide.htm' },
         essentials: { title: 'NPS · Ten Essentials', url: 'https://www.nps.gov/articles/10essentials.htm' },
         weather: { title: '中央氣象署 · 氣象隨選平台', url: 'https://wede.cwa.gov.tw/' },
@@ -101,8 +103,8 @@ export const DATA = {
         altitude: { title: 'CDC · Travel to High Altitudes', url: 'https://wwwnc.cdc.gov/travel/page/travel-to-high-altitudes' },
         mountain: { title: 'U.S. Department of State · Mountain Safety', url: 'https://travel.state.gov/en/international-travel/planning/safety-tips/mountain-safety.html' },
         lost: { title: '臺中市消防局 · 登山安全三原則', url: 'https://eoc.taichung.gov.tw/2614868/2614887/3194978' },
-        reporting: { title: '內政部消防署 · 報案要領', url: 'https://www.nfa.gov.tw/cht/?code=list&ids=68' },
-        app: { title: '內政部消防署 · 119報案APP', url: 'https://www.nfa.gov.tw/cht/index.php?code=list&ids=1600' },
+        reporting: { title: '內政部消防署 · 報案要領', url: 'https://www.nfa.gov.tw/cht/index.php?act=article&article_id=802&code=print&ids=68' },
+        app: { title: '南投縣消防局 · 消防防災e點通與119報案通訊限制', url: 'https://www.ntfd.gov.tw/index.php?act=article&code=detail&ids=5567' },
         ecology: { title: 'NPS · Leave No Trace Seven Principles', url: 'https://www.nps.gov/articles/leave-no-trace-seven-principles.htm' }
     },
     time: {
@@ -235,7 +237,8 @@ export const DATA = {
             name: bilingual(row[1], row[2]),
             description: bilingual(row[3], row[4]),
             stage: row[5],
-            sourceIds: [row[6]],
+            sourceIds: [...new Set([row[6], ...(row[6] === 'navigation' ? ['essentials'] : []), ...(row[6] === 'weather' ? ['planning'] : []), ...(row[6] === 'lost' ? ['emergency'] : []), ...(island.id === 'altitude' && row[0] === 'descent' ? ['altitudeSevere'] : [])])],
+            reviewStatus: 'source-reviewed',
             facts: [bilingual(row[7], row[8]), bilingual(row[9], row[10])],
             model: island.model,
             keywords: { zh: [row[1], island.name.zh, ...island.topics], en: [row[2], island.name.en] },

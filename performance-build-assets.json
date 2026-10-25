@@ -1,0 +1,17 @@
+[
+  {
+    "name": "bundle.b1f7825b005621be1edd.js",
+    "rawBytes": 663999,
+    "gzipBytes": 178818
+  },
+  {
+    "name": "index.html",
+    "rawBytes": 7534,
+    "gzipBytes": 3043
+  },
+  {
+    "name": "main.css",
+    "rawBytes": 19139,
+    "gzipBytes": 4414
+  }
+]

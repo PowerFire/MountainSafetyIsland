@@ -191,3 +191,6 @@ button:disabled { opacity: .55; cursor: default; }
 @media(max-width:360px) { :root { --mobile-bottom: calc(116px + env(safe-area-inset-bottom,0px)); } .collaboration-controls { display: grid; grid-template-columns: 44px 44px; } .time-panel:not([open]) { max-width: calc(100% - 130px); } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 @media(max-height:500px) { .explore-panel .panel-heading .eyebrow { display: none; } .explore-panel .panel-heading h2 { margin: 0; font-size: 18px; } .explore-panel .panel-heading { margin-bottom: 4px; } .explore-panel .search-label { margin: 4px 0; } .explore-panel .index-tabs { margin: 6px 0; } .sheet-handle { margin-bottom: 0; } }
+.diagnostics { position: fixed; z-index: 30; left: 12px; top: 200px; max-width: calc(100% - 24px); padding: 10px; border-radius: 10px; background: #fff8f4f5; border: 1px solid #b48560; font: 11px ui-monospace,monospace; }
+.diagnostics summary { min-height: 32px; cursor: pointer; }
+.diagnostics pre { line-height: 1.6; max-height: 60vh; overflow: auto; }

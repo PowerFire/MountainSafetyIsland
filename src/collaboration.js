@@ -95,9 +95,10 @@ export function createCollaboration({scene,islands,data,random,onChange}) {
     part('bikeframe',new THREE.BoxGeometry(.012,.012,.16),solid,2)
     const wheels=part('wheels',new THREE.TorusGeometry(.06,.008,5,12),solid,2)
     const shadow=part('shadow',new THREE.CircleGeometry(.09,12).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:'#211d1d',transparent:true,opacity:.22,depthWrite:false}))
-    const dummy=new THREE.Object3D(),root=new THREE.Object3D(),matrix=new THREE.Matrix4()
+    const dummy=new THREE.Object3D(),root=new THREE.Object3D(),matrix=new THREE.Matrix4(),colorCache=new Map()
+    let colorsDirty=true
     function set(name,index,position,rotation=[0,0,0],scale=[1,1,1],color='#211d1d'){
-        dummy.position.set(...position);dummy.rotation.set(...rotation);dummy.scale.set(...scale);dummy.updateMatrix();matrix.multiplyMatrices(root.matrix,dummy.matrix);parts[name].setMatrixAt(index,matrix);parts[name].setColorAt(index,new THREE.Color(color))
+        dummy.position.set(...position);dummy.rotation.set(...rotation);dummy.scale.set(...scale);dummy.updateMatrix();matrix.multiplyMatrices(root.matrix,dummy.matrix);parts[name].setMatrixAt(index,matrix);if(colorsDirty){if(!colorCache.has(color))colorCache.set(color,new THREE.Color(color));parts[name].setColorAt(index,colorCache.get(color))}
     }
     const textures=new Map()
     function cargoTexture(icon){
@@ -153,15 +154,16 @@ export function createCollaboration({scene,islands,data,random,onChange}) {
             for(let n=0;n<2;n++)set('wheels',i*2+n,[0,.065,n?.09:-.09],[0,Math.PI/2,0],w.flow.role==='cyclist'?[1,1,1]:[0,0,0],'#40372e')
             for(let n=0;n<2;n++)set('bikeframe',i*2+n,[0,.11+n*.025,0],[n?.45:0,0,0],w.flow.role==='cyclist'?[1,1,1]:[0,0,0],'#db6a41')
             set('shadow',i,[0,.003,0],[0,0,0],[1,1,1])
-            w.near=distance<16;w.sprite.position.copy(w.position).add(new THREE.Vector3(0,.57*size,0));w.sprite.visible=visible&&showCargo&&w.near
-            w.nameLabel.position.copy(w.position).add(new THREE.Vector3(0,.79*size,0));w.bubble.hidden=!(visible&&showNames&&distance<14)
+            w.near=distance<16;w.sprite.position.copy(w.position);w.sprite.position.y+=.57*size;w.sprite.visible=visible&&showCargo&&w.near
+            w.nameLabel.position.copy(w.position);w.nameLabel.position.y+=.79*size;const hideName=!(visible&&showNames&&distance<14);if(w.bubble.hidden!==hideName)w.bubble.hidden=hideName
         })
-        Object.values(parts).forEach(mesh=>{mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true})
+        Object.values(parts).forEach(mesh=>{mesh.instanceMatrix.needsUpdate=true;if(colorsDirty&&mesh.instanceColor)mesh.instanceColor.needsUpdate=true})
+        colorsDirty=false
     }
     const pickables=()=>[...Object.entries(parts).filter(([name])=>name!=='shadow').map(([,mesh])=>mesh),...lineMeshes.filter(m=>m.visible),...walkers.filter(w=>w.sprite.visible).map(w=>w.sprite)].filter(m=>m.visible)
     function resolveHit(hit){if(hit.object.userData.flowId)return{flowId:hit.object.userData.flowId};if(hit.object.userData.walkerId)return{walkerId:hit.object.userData.walkerId};if(hit.object.userData.walkers){const w=walkers[Math.floor(hit.instanceId/hit.object.userData.perWalker)];return{walkerId:w.id}}return null}
     return {network,routes,walkers,events,update,pickables,resolveHit,
-        setSelection(selection){active=selection;selectedWalker=selection?.walkerId||null;visibility()},
+        setSelection(selection){active=selection;selectedWalker=selection?.walkerId||null;colorsDirty=true;visibility()},
         getFlow(id){return data.flows.find(f=>f.id===id)},getWalker(id){return walkers.find(w=>w.id===id)},
         setLines(value){showLines=value;visibility()},setWalkers(value){visible=value;visibility()},setCargo(value){showCargo=value;visibility()},
         setNames(value){showNames=value;onChange()},setNameHandler(handler){walkers.forEach(w=>w.bubble.addEventListener('click',()=>handler(w.id)))},
